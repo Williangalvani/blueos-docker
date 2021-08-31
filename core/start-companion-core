@@ -30,7 +30,7 @@ SERVICES=(
     'ping',"$SERVICES_PATH/ping/main.py"
     'ttyd',"ttyd -p 8088 /usr/bin/tmux"
     'nginx',"nginx -g \"daemon off;\" -c $TOOLS_PATH/nginx/nginx.conf"
-    'vscode',"PORT=8083 code-server / --auth none"
+    'vscode',"sleep 5; PORT=8083 code-server / --auth none"
 )
 
 tmux -f /etc/tmux.conf start-server
