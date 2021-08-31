@@ -1,5 +1,4 @@
 FROM node:current-buster-slim AS frontendBuilder
-
 # Build frontend
 COPY frontend /home/pi/frontend
 RUN cd /home/pi/frontend && yarn install --network-timeout=300000 && yarn build --skip-plugins @vue/cli-plugin-eslint
@@ -14,6 +13,7 @@ RUN /home/pi/tools/mavlink_router/bootstrap.sh
 RUN /home/pi/tools/ttyd/bootstrap.sh
 
 FROM bluerobotics/companion-base:v0.0.2
+USER root
 
 # Install necessary tools
 COPY tools /home/pi/tools
@@ -52,7 +52,7 @@ COPY --from=frontendBuilder /home/pi/frontend/dist /home/pi/frontend
 ## When running, the .config folder in the docker is not accessible,
 ## since it gets shadowed by the host's `.config` folder.
 ## If the folder exists during the build step, it means we put it here by mistake.
-RUN [ ! -d "/root/.config" ]
+
 
 # Start
 ENTRYPOINT /usr/bin/start-companion-core && sleep infinity
