@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 VERSION="${VERSION:-master}"
-REMOTE="${REMOTE:-https://raw.githubusercontent.com/bluerobotics/companion-docker}"
+REMOTE="${REMOTE:-https://raw.githubusercontent.com/${GITHUB_REPOSITORY}}"
 REMOTE="$REMOTE/$VERSION"
 CONFIGURE_NETWORK_PATH="$REMOTE/install/network"
 
