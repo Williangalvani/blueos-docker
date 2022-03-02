@@ -37,6 +37,8 @@ jobs:
         if: env.NEED == 'true'
         # We use our own pimod as upstream doesn't provide armv7 images
         run: |
+          VERSION=$GITHUB_REPOSITORY
+          VERSION=${VERSION:-master}
           wget https://raw.githubusercontent.com/williangalvani/pimod/master/pimod.sh && chmod +x pimod.sh
           docker run --rm --privileged \
           -v $PWD:/files \
