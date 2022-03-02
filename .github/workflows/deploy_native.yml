@@ -41,12 +41,12 @@ jobs:
           VERSION=${VERSION:-master}
           wget https://raw.githubusercontent.com/williangalvani/pimod/master/pimod.sh && chmod +x pimod.sh
           docker run --rm --privileged \
-          -v $PWD:/files \
-          -e PATH=/pimod:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-          -e GITHUB_REPOSITORY=$GITHUB_REPOSITORY \
-          -e VERSION=$GITHUB_REF_NAME \
-          --workdir=/files \
-          --platform ${{ matrix.platforms }} williangalvani/pimod:latest pimod.sh deploy/pimod/blueos.Pifile
+            -v $PWD:/files \
+            -e PATH=/pimod:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+            -e GITHUB_REPOSITORY=$GITHUB_REPOSITORY \
+            -e VERSION=$GITHUB_REF_NAME \
+            --workdir=/files \
+            --platform ${{ matrix.platforms }} williangalvani/pimod:latest pimod.sh deploy/pimod/blueos.Pifile
 
       -
         name: Upload artifact
