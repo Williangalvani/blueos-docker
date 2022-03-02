@@ -23,18 +23,19 @@ jobs:
         uses: actions/checkout@v2
 
       -
-        name: Set env NEED
+        name: Set env SHOULD_RUN
+        # sets a variabel that means we should run on branches/tags and manual dispatchs only. (no PRs)
         run: |
           if [[ ( '${{github.event_name}}' == 'workflow_dispatch' || '${{github.event.workflow_run.conclusion}}' == 'success' )
             && (${GITHUB_REF} == refs/tags/* || ${GITHUB_REF} == refs/heads/*)
           ]]; then
-              echo "NEED=true" >> "$GITHUB_ENV"
+              echo "SHOULD_RUN=true" >> "$GITHUB_ENV"
           else
-              echo "NEED=false" >> "$GITHUB_ENV"
+              echo "SHOULD_RUN=false" >> "$GITHUB_ENV"
           fi
       -
         name: Pimod Build
-        if: env.NEED == 'true'
+        if: env.SHOULD_RUN == 'true'
         # We use our own pimod as upstream doesn't provide armv7 images
         run: |
           VERSION=$GITHUB_REPOSITORY
@@ -51,7 +52,7 @@ jobs:
       -
         name: Upload artifact
         uses: actions/upload-artifact@v2
-        if: env.NEED == 'true'
+        if: env.SHOULD_RUN == 'true'
         with:
           # TODO: add GITHUB_REF_NAME after https://github.com/actions/upload-artifact/issues/231 is fixed
           # name: blueos-${{ env.GITHUB_REF_NAME }}.zip
