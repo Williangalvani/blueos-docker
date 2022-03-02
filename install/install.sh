@@ -6,9 +6,6 @@ GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-bluerobotics/blueos-docker}
 REMOTE="${REMOTE:-https://raw.githubusercontent.com/${GITHUB_REPOSITORY}}"
 ROOT="$REMOTE/$VERSION"
 
-DIND_COMMIT="52379fa76dee07ca038624d639d9e14f4fb719ff"
-curl -fL -o /usr/local/bin/dind "https://raw.githubusercontent.com/moby/moby/${DIND_COMMIT}/hack/dind" && chmod +x /usr/local/bin/dind
-
 # Additional options
 DO_BOARD_CONFIG=1 # default to do the board config
 
@@ -108,8 +105,11 @@ systemctl enable docker
 if [ $RUNNING_IN_CI -eq 1 ]
 then
 
+    # Download Docker-in-Docker scripts
+    # This is used to allow running dockers from within other dockers, as this scripts usually runs in a docker in CI.
+    DIND_COMMIT="52379fa76dee07ca038624d639d9e14f4fb719ff"
+    curl -fL -o /usr/local/bin/dind "https://raw.githubusercontent.com/moby/moby/${DIND_COMMIT}/hack/dind" && chmod +x /usr/local/bin/dind
 
-set -x && \
     addgroup --system dockremap && \
     adduser --system --ingroup dockremap dockremap && \
     echo 'dockremap:165536:65536' >> /etc/subuid && \
