@@ -123,7 +123,7 @@ jobs:
           GIT_HASH_SHORT=$(git rev-parse --short "$GITHUB_SHA")
           docker buildx build \
             ${{ steps.prepare.outputs.buildx_args }} \
-            --tag ${{ secrets.DOCKER_USERNAME }}/${{ matrix.project }}:${GIT_HASH_SHORT} \
+            --tag ${DOCKER_IMAGE}:${GIT_HASH_SHORT} \
             --output "type=docker,dest=blueos-core-${GIT_HASH_SHORT}.tar" \
       -
         name: Upload artifact
