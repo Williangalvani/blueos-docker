@@ -120,6 +120,9 @@ jobs:
         name: Create image artifact
         if: success() && matrix.docker == 'core'
         run: |
+          USERNAME=${{ secrets.DOCKER_USERNAME }}
+          USERNAME=${USERNAME:-bluerobotics}
+          DOCKER_IMAGE=$USERNAME/${{ matrix.project }}-${{ matrix.docker }}
           GIT_HASH_SHORT=$(git rev-parse --short "$GITHUB_SHA")
           docker buildx build \
             ${{ steps.prepare.outputs.buildx_args }} \
