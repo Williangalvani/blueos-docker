@@ -56,7 +56,7 @@ jobs:
         with:
           # TODO: add GITHUB_REF_NAME after https://github.com/actions/upload-artifact/issues/231 is fixed
           # name: blueos-${{ env.GITHUB_REF_NAME }}.zip
-          name: blueos.zip
+          name: blueos
           path: deploy/pimod/blueos.img
           if-no-files-found: error
 
