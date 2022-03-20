@@ -20,4 +20,7 @@ parallel --halt now,fail=1 '/home/pi/tools/{}/bootstrap.sh' ::: "${TOOLS[@]}"
 # this is the section where apt stuff gets installed until we move them up to
 # blueos-base
 
+apt update
 apt install -y --no-install-recommends fuse libfuse2
+apt clean
+rm -rf /var/lib/apt/lists/*
