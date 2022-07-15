@@ -6,7 +6,11 @@
       no-gutters
     />
     <v-card>
-      <h2>Ping Devices</h2>
+      <v-card-title class="justify-center">
+        <h3>
+          Ping Devices
+        </h3>
+      </v-card-title>
       <v-row>
         <v-col
           v-for="ping in ping_devices"
@@ -14,15 +18,31 @@
         >
           <v-card
             class="py-3 px-3"
-            style="min-height: 100%; max-width: 30%;"
+            style="min-height: 100%; max-width: 40%;"
           >
-            <h4>{{ ping.ping_type }}</h4>
+            <v-card-title class="justify-center">
+              {{ ping.ping_type }}
+            </v-card-title>
             <v-simple-table dense>
               <tbody>
+                <tr>
+                  <td>Firmware</td><td>
+                    {{ `${ping.firmware_version_major}.${ping.firmware_version_minor}.${ping.firmware_version_patch}` }}
+                  </td>
+                </tr>
                 <tr><td>ID</td><td>{{ ping.device_id }}</td></tr>
                 <tr><td>Model</td><td>{{ ping.device_model }}</td></tr>
                 <tr><td>Revision</td><td>{{ ping.device_revision }}</td></tr>
-                <tr><td>Port</td><td>{{ ping.port }}</td></tr>
+                <tr><td>Device</td><td>{{ ping.port }}</td></tr>
+                <tr><td>Bridge</td><td> N/A </td></tr>
+                <tr>
+                  <td>Mavlink Driver</td><td>
+                    <v-switch
+                      inset
+                      disabled
+                    />
+                  </td>
+                </tr>
               </tbody>
             </v-simple-table>
           </v-card>
@@ -52,6 +72,6 @@ export default Vue.extend({
 
 <style scoped>
   .v-card {
-    padding: 30px;
+    padding: 20px;
   }
 </style>
