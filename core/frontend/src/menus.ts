@@ -18,7 +18,7 @@ const menus = [
       },
       {
         title: 'Peripherals',
-        icon: 'mdi-image-filter-center-focus-strong',
+        icon: 'mdi-robot-industrial',
         route: '/autopilot/peripherals',
         advanced: false,
         text: 'Peripherals settings',
