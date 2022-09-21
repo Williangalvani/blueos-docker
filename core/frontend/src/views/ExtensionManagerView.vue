@@ -28,44 +28,38 @@
       v-if="tab === 1"
       class="d-flex pa-5"
     >
-      <div
-        v-for="extension in manifest"
-        :key="extension.website+extension.tag"
-        class="pa-2"
-        style="min-height: 100%;"
-      >
-        <v-card
-          class="mx-auto"
-          max-width="344"
-          outlined
-          style="cursor: pointer;"
-          @click="showModal(extension)"
+      <v-row>
+        <div
+          v-for="extension in manifest"
+          :key="extension.website+extension.tag"
+          class="pa-2"
         >
-          <v-list-item three-line>
-            <v-list-item-avatar
-              tile
-              size="50"
-              color="grey"
-            />
-            <v-list-item-content>
-              <v-list-item-title class="text-h5 mb-1">
-                {{ extension.name }}
-              </v-list-item-title>
-              <v-list-item-subtitle> {{ extension.description }} </v-list-item-subtitle>
-            </v-list-item-content>
-          </v-list-item>
-
-          <v-card-actions>
-            <v-btn
-              outlined
-              rounded
-              text
-            >
-              Install
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </div>
+          <v-card
+            class="mx-auto"
+            width="300"
+            outlined
+            style="cursor: pointer;"
+            @click="showModal(extension)"
+          >
+            <v-list-item three-line>
+              <v-list-item-avatar
+                tile
+                size="50"
+                color="grey"
+              />
+              <v-list-item-content>
+                <v-list-item-title class="text-h5 mb-1 extension-name" style="font-size: 18px !important;">
+                  {{ extension.name }}
+                </v-list-item-title>
+                <v-list-item-subtitle> {{ extension.description }} </v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
+            <v-card-subtitle class="pt-0">
+              {{ extension.author }}
+            </v-card-subtitle>
+          </v-card>
+        </div>
+      </v-row>
       <v-container
         v-if="manifest.length === 0"
         class="text-center"
