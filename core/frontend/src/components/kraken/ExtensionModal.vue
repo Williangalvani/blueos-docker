@@ -33,6 +33,10 @@
             min-height="50vh"
             rounded="lg"
           >
+            <v-select
+              :items="available_tags"
+              label="Standard"
+            />
             <h4 v-if="extension && extension.website">
               Website:
             </h4>
@@ -90,7 +94,7 @@ export default Vue.extend({
   name: 'ExtensionModal',
   props: {
     extension: {
-      type: Object as PropType<ExtensionData>,
+      type: Object as PropType<ExtensionData | null>,
       required: false,
     },
   },
@@ -100,6 +104,13 @@ export default Vue.extend({
         return 'No readme available'
       }
       return marked(this.extension?.readme, { sanitize: true })
+    },
+    available_tags(): string[] {
+      if (this.extension && this.extension.versions) {
+        const keys = Object.keys(this.extension.versions)
+        return keys ?? []
+      }
+      return []
     },
   },
 
