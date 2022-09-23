@@ -20,7 +20,7 @@ export interface ExtensionData {
     permissions?: string
     requirements?: string
     tag?: string
-    versions?: Dictionary<Version>
+    versions: Dictionary<Version>
     authors?: Author[]
     readme?: string
     support?: string
