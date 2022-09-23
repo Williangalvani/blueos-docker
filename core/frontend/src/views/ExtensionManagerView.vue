@@ -2,11 +2,11 @@
   <v-container>
     <v-dialog
       v-model="show_dialog"
-      width="auto"
+      width="80%"
     >
       <v-card>
         <v-card-title class="text-h5 grey lighten-2 black--text">
-          {{ selected_extension?.name }}
+          {{ selected_extension? selected_extension.name : '' }}
         </v-card-title>
 
         <v-card-text>
@@ -14,32 +14,73 @@
             <v-col
               cols="10"
               sm="8"
+              class="mt-5"
             >
-              <v-sheet
+              <v-card
                 min-height="50vh"
                 rounded="lg"
+                style="overflow: auto;"
               >
-                <div
-                  class="ma-5"
-                  v-html="compiled_markdown"
-                />
-              </v-sheet>
+                <v-card-text>
+                  <div
+                    class="readme"
+                    v-html="compiled_markdown"
+                  />
+                </v-card-text>
+              </v-card>
             </v-col>
             <v-col
               cols="4"
-              sm="2"
+              sm="4"
+              class="mt-5"
             >
               <v-sheet
                 min-height="50vh"
                 rounded="lg"
               >
-                Permissions:
-                <pre> {{ selected_extension?.permissions }} </pre>
-                <v-btn>asd</v-btn>
+                <h4 v-if="selected_extension && selected_extension.website">
+                  Website:
+                </h4>
+                <a :href="selected_extension ? selected_extension.website : null">
+                  {{ selected_extension ? selected_extension.website : '' }}</a>
+                <h4 v-if="selected_extension && selected_extension.docs">
+                  Docs:
+                </h4>
+                <a :href="selected_extension ? selected_extension.docs : null">
+                  {{ selected_extension ? selected_extension.docs : '' }}</a>
+
+                <h4>Permissions:</h4>
+                <v-card
+                  width="100%"
+                >
+                  <v-card-text>
+                    <pre>{{ selected_extension ? selected_extension.permissions: '' }}</pre>
+                  </v-card-text>
+                </v-card>
+                <h4>Authors:</h4>
+                <v-card>
+                  <v-card-text>
+                    <ul>
+                      <li
+                        v-for="author in (selected_extension ? selected_extension.authors : [])"
+                        :key="author.email"
+                      >
+                        {{ author.name }}
+                      </li>
+                    </ul>
+                  </v-card-text>
+                </v-card>
               </v-sheet>
             </v-col>
           </v-row>
         </v-card-text>
+        <v-card-actions class="justify-center">
+          <v-btn
+            color="primary"
+          >
+            Install
+          </v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
     <v-tabs
@@ -127,10 +168,10 @@ export default Vue.extend({
   },
   computed: {
     compiled_markdown(): string {
-      if (this.selected_extension?.description === undefined || this.selected_extension?.description === null) {
+      if (this.selected_extension?.readme === undefined || this.selected_extension?.readme === null) {
         return 'No readme available'
       }
-      return marked(this.selected_extension?.description, { sanitize: true })
+      return marked(this.selected_extension?.readme, { sanitize: true })
     },
   },
   mounted() {
@@ -158,3 +199,9 @@ export default Vue.extend({
   },
 })
 </script>
+
+<style>
+  div.readme h1 {
+    margin: 5px;
+  }
+</style>
