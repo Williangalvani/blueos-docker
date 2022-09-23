@@ -4,84 +4,9 @@
       v-model="show_dialog"
       width="80%"
     >
-      <v-card>
-        <v-card-title class="text-h5 grey lighten-2 black--text">
-          {{ selected_extension? selected_extension.name : '' }}
-        </v-card-title>
-
-        <v-card-text>
-          <v-row>
-            <v-col
-              cols="10"
-              sm="8"
-              class="mt-5"
-            >
-              <v-card
-                min-height="50vh"
-                rounded="lg"
-                style="overflow: auto;"
-              >
-                <v-card-text>
-                  <div
-                    class="readme"
-                    v-html="compiled_markdown"
-                  />
-                </v-card-text>
-              </v-card>
-            </v-col>
-            <v-col
-              cols="4"
-              sm="4"
-              class="mt-5"
-            >
-              <v-sheet
-                min-height="50vh"
-                rounded="lg"
-              >
-                <h4 v-if="selected_extension && selected_extension.website">
-                  Website:
-                </h4>
-                <a :href="selected_extension ? selected_extension.website : null">
-                  {{ selected_extension ? selected_extension.website : '' }}</a>
-                <h4 v-if="selected_extension && selected_extension.docs">
-                  Docs:
-                </h4>
-                <a :href="selected_extension ? selected_extension.docs : null">
-                  {{ selected_extension ? selected_extension.docs : '' }}</a>
-
-                <h4>Permissions:</h4>
-                <v-card
-                  width="100%"
-                >
-                  <v-card-text>
-                    <pre>{{ selected_extension ? selected_extension.permissions: '' }}</pre>
-                  </v-card-text>
-                </v-card>
-                <h4>Authors:</h4>
-                <v-card>
-                  <v-card-text>
-                    <ul>
-                      <li
-                        v-for="author in (selected_extension ? selected_extension.authors : [])"
-                        :key="author.email"
-                      >
-                        {{ author.name }}
-                      </li>
-                    </ul>
-                  </v-card-text>
-                </v-card>
-              </v-sheet>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-btn
-            color="primary"
-          >
-            Install
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <extension-modal
+        :extension="selected_extension"
+      />
     </v-dialog>
     <v-tabs
       v-model="tab"
@@ -97,36 +22,13 @@
       <v-row>
         <div
           v-for="extension in manifest"
-          :key="extension.website+extension.tag"
+          :key="extension.website "
           class="pa-2"
         >
-          <v-card
-            class="mx-auto"
-            width="300"
-            outlined
-            style="cursor: pointer;"
-            @click="showModal(extension)"
-          >
-            <v-list-item three-line>
-              <v-list-item-avatar
-                tile
-                size="50"
-                color="grey"
-              />
-              <v-list-item-content>
-                <v-list-item-title
-                  class="text-h5 mb-1 extension-name"
-                  style="font-size: 18px !important;"
-                >
-                  {{ extension.name }}
-                </v-list-item-title>
-                <v-list-item-subtitle> {{ extension.description }} </v-list-item-subtitle>
-              </v-list-item-content>
-            </v-list-item>
-            <v-card-subtitle class="pt-0">
-              {{ extension.author }}
-            </v-card-subtitle>
-          </v-card>
+          <extension-card
+            :extension="extension"
+            @clicked="showModal(extension)"
+          />
         </div>
       </v-row>
       <v-container
@@ -142,9 +44,10 @@
 </template>
 
 <script lang="ts">
-import { marked } from 'marked'
 import Vue from 'vue'
 
+import ExtensionCard from '@/components/kraken/ExtensionCard.vue'
+import ExtensionModal from '@/components/kraken/ExtensionModal.vue'
 import Notifier from '@/libs/notifier'
 import { kraken_service } from '@/types/frontend_services'
 import back_axios from '@/utils/api'
@@ -157,6 +60,10 @@ const notifier = new Notifier(kraken_service)
 
 export default Vue.extend({
   name: 'ExtensionManagerView',
+  components: {
+    ExtensionCard,
+    ExtensionModal,
+  },
   data() {
     return {
       tab: 0,
@@ -165,14 +72,6 @@ export default Vue.extend({
       // TODO: fetch this from backend
       manifest: [] as ExtensionData[],
     }
-  },
-  computed: {
-    compiled_markdown(): string {
-      if (this.selected_extension?.readme === undefined || this.selected_extension?.readme === null) {
-        return 'No readme available'
-      }
-      return marked(this.selected_extension?.readme, { sanitize: true })
-    },
   },
   mounted() {
     this.fetchManifest()
