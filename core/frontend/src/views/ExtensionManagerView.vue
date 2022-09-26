@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container fluid>
     <v-dialog
       v-model="show_dialog"
       width="80%"
@@ -19,8 +19,8 @@
       v-if="tab === 1"
       class="d-flex pa-5"
     >
-      <v-row>
-        <div
+      <v-row dense>
+        <v-col
           v-for="extension in manifest"
           :key="extension.website "
           class="pa-2"
@@ -29,7 +29,7 @@
             :extension="extension"
             @clicked="showModal(extension)"
           />
-        </div>
+      </v-col>
       </v-row>
       <v-container
         v-if="manifest.length === 0"

@@ -38,27 +38,30 @@
               :items="available_tags"
               label="Version"
             />
-            <h4 v-if="extension && extension.website">
+            <h3 class="ma-2" v-if="extension && extension.website">
               Website:
-            </h4>
+            </h3>
             <a :href="extension ? extension.website : null">
               {{ extension ? extension.website : '' }}</a>
-            <h4 v-if="extension && extension.docs">
+            <h3 class="ma-2" v-if="extension && extension.docs">
               Docs:
-            </h4>
+            </h3>
             <a :href="extension ? extension.docs : null">
               {{ extension ? extension.docs : '' }}</a>
 
-            <h4>Permissions:</h4>
+            <h3 class="ma-2">Permissions:</h3>
             <v-card
+              outlined
               width="100%"
             >
               <v-card-text>
                 <pre>{{ permissions }}</pre>
               </v-card-text>
             </v-card>
-            <h4>Authors:</h4>
-            <v-card>
+            <h3 class="ma-2">Authors:</h3>
+            <v-card
+            outlined
+            >
               <v-card-text>
                 <ul>
                   <li
