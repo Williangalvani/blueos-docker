@@ -29,7 +29,7 @@
             :extension="extension"
             @clicked="showModal(extension)"
           />
-      </v-col>
+        </v-col>
       </v-row>
       <v-container
         v-if="manifest.length === 0"

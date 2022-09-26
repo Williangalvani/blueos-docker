@@ -33,34 +33,60 @@
             min-height="50vh"
             rounded="lg"
           >
-            <v-select
-              v-model="selected_version"
-              :items="available_tags"
-              label="Version"
-            />
-            <h3 class="ma-2" v-if="extension && extension.website">
+            <v-row dense>
+              <v-col>
+                <v-select
+                  v-model="selected_version"
+                  :items="available_tags"
+                  label="Version"
+                />
+              </v-col>
+
+              <v-col class="text-center">
+                <v-btn
+                  class="mt-3"
+                  color="primary"
+                >
+                  Install
+                </v-btn>
+              </v-col>
+            </v-row>
+            <h3
+              v-if="extension && extension.website"
+              class="ma-2"
+            >
               Website:
             </h3>
             <a :href="extension ? extension.website : null">
               {{ extension ? extension.website : '' }}</a>
-            <h3 class="ma-2" v-if="extension && extension.docs">
+            <h3
+              v-if="extension && extension.docs"
+              class="ma-2"
+            >
               Docs:
             </h3>
             <a :href="extension ? extension.docs : null">
               {{ extension ? extension.docs : '' }}</a>
 
-            <h3 class="ma-2">Permissions:</h3>
+            <h3 v-if="permissions" class="ma-2">
+              Permissions:
+            </h3>
             <v-card
+              v-if="permissions"
               outlined
               width="100%"
             >
-              <v-card-text>
+              <v-card-text
+              style="overflow: auto;"
+              >
                 <pre>{{ permissions }}</pre>
               </v-card-text>
             </v-card>
-            <h3 class="ma-2">Authors:</h3>
+            <h3 class="ma-2">
+              Authors:
+            </h3>
             <v-card
-            outlined
+              outlined
             >
               <v-card-text>
                 <ul>
@@ -77,13 +103,6 @@
         </v-col>
       </v-row>
     </v-card-text>
-    <v-card-actions class="justify-center">
-      <v-btn
-        color="primary"
-      >
-        Install
-      </v-btn>
-    </v-card-actions>
   </v-card>
 </template>
 
@@ -132,16 +151,16 @@ export default Vue.extend({
       return 'No permissions required'
     },
   },
-  mounted() {
-    const [first] = Object.keys(this.extension.versions) ?? ''
-    this.selected_version = first
-  },
   watch: {
     // whenever question changes, this function will run
     extension() {
       const [first] = Object.keys(this.extension.versions) ?? ''
       this.selected_version = first
     },
+  },
+  mounted() {
+    const [first] = Object.keys(this.extension.versions) ?? ''
+    this.selected_version = first
   },
 })
 </script>
