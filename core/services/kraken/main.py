@@ -17,12 +17,16 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse
 from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
+from kraken import Kraken
+from kraken import Extension
 
 SERVICE_NAME = "kraken"
 
 REPO_URL = "https://raw.githubusercontent.com/Williangalvani/BlueOS-Extensions-Repository/master/manifest.json"
 
 logging.basicConfig(handlers=[InterceptHandler()], level=0)
+
+kraken = Kraken()
 
 try:
     logger.add(get_new_log_path(SERVICE_NAME))
@@ -42,12 +46,24 @@ logger.info("Releasing the Kraken!")
 # @temporary_cache(timeout_seconds=300)
 @version(1, 0)
 async def fetch_manifest() -> Any:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(REPO_URL) as resp:
-            if resp.status != 200:
-                print(f"Error status {resp.status}")
-                raise Exception("Could not get auth token")
-            return await resp.json(content_type=None)
+    return await kraken.fetch_manifest()
+
+@app.get("/installed_extensions", status_code=status.HTTP_200_OK)
+# @temporary_cache(timeout_seconds=300)
+@version(1, 0)
+async def get_installed_extensions() -> Any:
+    return await kraken.get_configured_extensions()
+
+@app.post("/install_extension", status_code=status.HTTP_201_CREATED)
+@version(1, 0)
+async def install_extension(extension: Extension) -> Any:
+    return await kraken.install_extension(extension)
+
+@app.post("/running_dockers", status_code=status.HTTP_200_OK)
+@version(1, 0)
+async def get_dockers() -> Any:
+    return await kraken.get_dockers()
+
 
 app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
 

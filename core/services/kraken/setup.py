@@ -14,5 +14,6 @@ setuptools.setup(
         "fastapi-versioning == 0.9.1",
         "loguru == 0.5.3",
         "uvicorn == 0.13.4",
+        "aiodocker == 0.21.0",
     ],
 )
