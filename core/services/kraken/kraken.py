@@ -26,29 +26,24 @@ class Kraken:
                     raise Exception("Could not get auth token")
                 return await resp.json(content_type=None)
 
-    async def get_docker_stats(self):
-        self.client = aiodocker.Docker()
-        if self.containers:
-            return self.containers
-        containers = []
-        for container in await self.client.containers.list():
-            container_data = (await container.stats(stream=False))[-1]
-            container_data["name"] = container_data["name"].replace("/", "")
-            container_data["managed"] = any(
-                container_data["name"] in extension.name for extension in self.settings.extensions
-            )
-            containers.append((container_data))
-        self.containers = containers
-        return containers
-
     async def get_configured_extensions(self):
         return self.settings.extensions
 
     async def install_extension(self, extension):
+        if any(extension.name == installed_extension.name for installed_extension in self.settings.extensions):
+            # already installed
+            return
         new_extension = Extension(
             name=extension.name, tag=extension.tag, permissions=extension.permissions, enabled=extension.enabled
         )
         self.settings.extensions.append(new_extension)
+        self.manager.save()
+
+    async def uninstall_extension(self, extension_name: str):
+        self.settings.extensions = [
+            extension for extension in self.settings.extensions
+            if extension.name != extension_name
+        ]
         self.manager.save()
 
     async def list_containers(self):

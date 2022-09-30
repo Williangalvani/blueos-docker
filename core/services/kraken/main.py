@@ -60,20 +60,29 @@ async def fetch_manifest() -> Any:
 # @temporary_cache(timeout_seconds=300)
 @version(1, 0)
 async def get_installed_extensions() -> Any:
-    return await kraken.get_configured_extensions()
+    extensions = await kraken.get_configured_extensions()
+    return [Extension(
+        name=extension.name,
+        tag=extension.tag,
+        permissions=extension.permissions,
+        enabled=extension.enabled
+    ) for extension in extensions]
 
 
-@app.post("/install_extension", status_code=status.HTTP_201_CREATED)
+@app.post("/extension/install", status_code=status.HTTP_201_CREATED)
 @version(1, 0)
 async def install_extension(extension: Extension) -> Any:
     return await kraken.install_extension(extension)
 
-
-@app.get("/docker_stats", status_code=status.HTTP_200_OK)
+@app.post("/extension/uninstall", status_code=status.HTTP_201_CREATED)
 @version(1, 0)
-async def get_dockers_stats() -> Any:
-    return await kraken.get_dockers_stats()
+async def uninstall_extension(extension_name: str) -> Any:
+    return await kraken.uninstall_extension(extension_name)
 
+@app.post("/extension/disable", status_code=status.HTTP_201_CREATED)
+@version(1, 0)
+async def disable_extension(extension_name: str) -> Any:
+    return await kraken.disable_extension(extension_name)
 
 @app.get("/list_containers", status_code=status.HTTP_200_OK)
 @version(1, 0)
