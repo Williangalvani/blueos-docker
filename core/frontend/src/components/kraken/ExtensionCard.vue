@@ -11,7 +11,9 @@
         tile
         size="50"
         color="grey"
-      />
+      >
+      <v-img :src="extension.icon"></v-img>
+      </v-list-item-avatar>
       <v-list-item-content>
         <v-list-item-title
           class="text-h5 mb-1 extension-name"

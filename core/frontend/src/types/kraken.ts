@@ -25,4 +25,5 @@ export interface ExtensionData {
     readme?: string
     support?: string
     docs?: string
+    icon?: string
 }
