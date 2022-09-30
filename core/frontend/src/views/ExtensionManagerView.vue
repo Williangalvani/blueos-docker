@@ -6,6 +6,7 @@
     >
       <extension-modal
         :extension="selected_extension"
+        :installed="installedVersion()"
         @clicked="install"
       />
     </v-dialog>
@@ -71,14 +72,14 @@
           </v-col>
         </v-row>
         <v-container
-          v-if="dockers.length === 0"
+          v-if="installed_extensions.length === 0"
           class="text-center"
         >
           <p
             v-if="dockers_fetch_done"
             class="text-h6"
           >
-            No Extensions available.
+            No Extensions installed.
           </p>
           <p
             v-else
@@ -87,19 +88,6 @@
             Fetching Extensions
           </p>
         </v-container>
-      </v-col>
-      <v-col
-        v-if="tab === 0"
-        class="pa-5 pt-6"
-      >
-        <!-- <v-card>
-          <v-card-text>
-            <v-checkbox
-              v-model="show_all"
-              :label="'Show unmananged'"
-            />
-          </v-card-text>
-        </v-card> -->
       </v-col>
     </v-row>
   </v-container>
@@ -135,7 +123,6 @@ export default Vue.extend({
       selected_extension: null as (null | ExtensionData),
       // TODO: fetch this from backend
       manifest: [] as ExtensionData[],
-      dockers: [] as any[],
       dockers_fetch_done: false,
     }
   },
@@ -205,6 +192,15 @@ export default Vue.extend({
         .catch((error) => {
           notifier.pushBackError('EXTENSIONS_UNINSTALL_FAIL', error)
         })
+    },
+    installedVersion(): string | null {
+      const extension_name = this.selected_extension?.docker
+      if (!extension_name) {
+        return null
+      }
+      const versions = this.installed_extensions
+        .filter((extension) => extension.name === extension_name)
+      return versions.length ? versions[0].tag : null
     },
   },
 })

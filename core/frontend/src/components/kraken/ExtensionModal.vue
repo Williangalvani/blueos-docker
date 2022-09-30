@@ -44,11 +44,20 @@
 
               <v-col class="text-center">
                 <v-btn
+                  v-if="installed !== selected_version"
                   class="mt-3"
                   color="primary"
                   @click="$emit('clicked', selected_version)"
                 >
                   Install
+                </v-btn>
+                <v-btn
+                  v-if="installed === selected_version"
+                  class="mt-3"
+                  disabled
+                  color="primary"
+                >
+                  Installed
                 </v-btn>
               </v-col>
             </v-row>
@@ -114,21 +123,25 @@
 import { marked } from 'marked'
 import Vue, { PropType } from 'vue'
 
-import { ExtensionData, Version } from '@/types/kraken'
-import back_axios from '@/utils/api'
+import { ExtensionData } from '@/types/kraken'
 
 export default Vue.extend({
   name: 'ExtensionModal',
-  data() {
-    return {
-      selected_version: '',
-    }
-  },
   props: {
     extension: {
       type: Object as PropType<ExtensionData>,
       required: true,
     },
+    installed: {
+      type: String,
+      default: null,
+      required: false,
+    },
+  },
+  data() {
+    return {
+      selected_version: '',
+    }
   },
   computed: {
     compiled_markdown(): string {
