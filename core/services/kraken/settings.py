@@ -20,11 +20,8 @@ from pykson import (
 class Extension(JsonObject):
     name = StringField()
     tag = StringField()
-    additional_pemissions: JsonObject()
-    enabled: BooleanField()
-
-    def __repr__(self) -> str:
-        return str(self.name)
+    permissions = StringField()
+    enabled = BooleanField()
 
 class SettingsV1(settings.BaseSettings):
     VERSION = 1

@@ -1,33 +1,18 @@
 import aiohttp
 import aiodocker
 from settings import SettingsV1
-from settings import Extension as SettingsExtension
+from settings import Extension
 from typing import Any
-from pydantic import BaseModel
 from commonwealth.settings.manager import Manager
 
 
-class Extension(BaseModel):
-    name: str
-    tag: str
-    additional_pemissions: Any
-    enabled: bool
-
-    @staticmethod
-    def from_settings_spec(spec: SettingsExtension)  -> "Extension":
-        return Extension(
-            name=spec.name,
-            tag=spec.tag,
-            additional_pemissions=spec.additional_pemissions,
-            enabled=spec.enabled
-        )
-
+REPO_URL = "https://raw.githubusercontent.com/Williangalvani/BlueOS-Extensions-Repository/master/manifest.json"
 
 class Kraken:
 
     def __init__(self):
         self.load_settings()
-        print(self.settings)
+        self.containers = []
 
 
     def load_settings(self):
@@ -43,17 +28,37 @@ class Kraken:
                     raise Exception("Could not get auth token")
                 return await resp.json(content_type=None)
 
-    async def get_dockers(self):
+    async def get_docker_stats(self):
         self.client = aiodocker.Docker()
-        images = []
+        if self.containers:
+            return self.containers
+        containers = []
         for container in await self.client.containers.list():
-            images.append(await container.stats(stream=False))
-        return images
+            container_data = (await container.stats(stream=False))[-1]
+            container_data['name'] = container_data['name'].replace("/","")
+            container_data["managed"] = any(container_data["name"] in extension.name for extension in self.settings.extensions)
+            containers.append((container_data))
+        self.containers = containers
+        return containers
 
 
     async def get_configured_extensions(self):
         return self.settings.extensions
 
 
-    async def install_extension(self, extension: SettingsExtension):
-        self.settings.extensions.append(Extension.from_settings_spec(extension))
+    async def install_extension(self, extension):
+        new_extension = Extension(
+            name=extension.name,
+            tag=extension.tag,
+            permissions=extension.permissions,
+            enabled=extension.enabled
+        )
+        self.settings.extensions.append(new_extension)
+        self.manager.save()
+
+
+    async def list_containers(self):
+        self.client = aiodocker.Docker()
+        containers = await self.client.containers.list(filter='{"status": ["running"]}')
+        print(containers)
+        return containers

@@ -13,16 +13,21 @@ import uvicorn
 from commonwealth.utils.apis import GenericErrorHandlingRoute
 from commonwealth.utils.decorators import temporary_cache
 from commonwealth.utils.logs import InterceptHandler, get_new_log_path
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse
 from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
 from kraken import Kraken
-from kraken import Extension
+
+class Extension(BaseModel):
+    name: str
+    tag: str
+    permissions: str
+    enabled: bool
+
 
 SERVICE_NAME = "kraken"
-
-REPO_URL = "https://raw.githubusercontent.com/Williangalvani/BlueOS-Extensions-Repository/master/manifest.json"
 
 logging.basicConfig(handlers=[InterceptHandler()], level=0)
 
@@ -59,10 +64,23 @@ async def get_installed_extensions() -> Any:
 async def install_extension(extension: Extension) -> Any:
     return await kraken.install_extension(extension)
 
-@app.post("/running_dockers", status_code=status.HTTP_200_OK)
+@app.get("/docker_stats", status_code=status.HTTP_200_OK)
 @version(1, 0)
-async def get_dockers() -> Any:
-    return await kraken.get_dockers()
+async def get_dockers_stats() -> Any:
+    return await kraken.get_dockers_stats()
+
+@app.get("/list_containers", status_code=status.HTTP_200_OK)
+@version(1, 0)
+async def list_containers() -> Any:
+    containers =  await kraken.list_containers()
+    return [{
+        "name": container["Names"][0    ],
+        "image": container["Image"],
+        "imageId": container["ImageID"]
+
+    } for container in containers]
+
+
 
 
 app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)

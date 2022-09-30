@@ -46,6 +46,7 @@
                 <v-btn
                   class="mt-3"
                   color="primary"
+                  @click="$emit('clicked', selected_version)"
                 >
                   Install
                 </v-btn>
@@ -68,7 +69,10 @@
             <a :href="extension ? extension.docs : null">
               {{ extension ? extension.docs : '' }}</a>
 
-            <h3 v-if="permissions" class="ma-2">
+            <h3
+              v-if="permissions"
+              class="ma-2"
+            >
               Permissions:
             </h3>
             <v-card
@@ -77,7 +81,7 @@
               width="100%"
             >
               <v-card-text
-              style="overflow: auto;"
+                style="overflow: auto;"
               >
                 <pre>{{ permissions }}</pre>
               </v-card-text>
