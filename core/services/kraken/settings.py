@@ -7,10 +7,10 @@ import psutil
 from commonwealth.settings import settings
 from loguru import logger
 from pykson import (
+    BooleanField,
     IntegerField,
     JsonObject,
     ListField,
-    BooleanField,
     ObjectField,
     ObjectListField,
     StringField,
@@ -22,6 +22,7 @@ class Extension(JsonObject):
     tag = StringField()
     permissions = StringField()
     enabled = BooleanField()
+
 
 class SettingsV1(settings.BaseSettings):
     VERSION = 1

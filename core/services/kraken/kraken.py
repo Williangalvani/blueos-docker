@@ -1,24 +1,22 @@
-import aiohttp
-import aiodocker
-from settings import SettingsV1
-from settings import Extension
 from typing import Any
+
+import aiodocker
+import aiohttp
 from commonwealth.settings.manager import Manager
 
+from settings import Extension, SettingsV1
 
 REPO_URL = "https://raw.githubusercontent.com/Williangalvani/BlueOS-Extensions-Repository/master/manifest.json"
 
-class Kraken:
 
+class Kraken:
     def __init__(self):
         self.load_settings()
         self.containers = []
 
-
     def load_settings(self):
         self.manager = Manager("Kraken", SettingsV1)
         self.settings = self.manager.settings
-
 
     async def fetch_manifest(self):
         async with aiohttp.ClientSession() as session:
@@ -35,27 +33,23 @@ class Kraken:
         containers = []
         for container in await self.client.containers.list():
             container_data = (await container.stats(stream=False))[-1]
-            container_data['name'] = container_data['name'].replace("/","")
-            container_data["managed"] = any(container_data["name"] in extension.name for extension in self.settings.extensions)
+            container_data["name"] = container_data["name"].replace("/", "")
+            container_data["managed"] = any(
+                container_data["name"] in extension.name for extension in self.settings.extensions
+            )
             containers.append((container_data))
         self.containers = containers
         return containers
 
-
     async def get_configured_extensions(self):
         return self.settings.extensions
 
-
     async def install_extension(self, extension):
         new_extension = Extension(
-            name=extension.name,
-            tag=extension.tag,
-            permissions=extension.permissions,
-            enabled=extension.enabled
+            name=extension.name, tag=extension.tag, permissions=extension.permissions, enabled=extension.enabled
         )
         self.settings.extensions.append(new_extension)
         self.manager.save()
-
 
     async def list_containers(self):
         self.client = aiodocker.Docker()
