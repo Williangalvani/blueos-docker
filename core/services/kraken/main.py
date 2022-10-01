@@ -1,23 +1,18 @@
 #! /usr/bin/env python3
+import argparse
+import asyncio
 import logging
-import shutil
-import subprocess
-import time
-from enum import Enum
-from pathlib import Path
+
 from typing import Any
 
-import aiohttp
-import appdirs
-import uvicorn
 from commonwealth.utils.apis import GenericErrorHandlingRoute
-from commonwealth.utils.decorators import temporary_cache
 from commonwealth.utils.logs import InterceptHandler, get_new_log_path
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, status
 from fastapi.responses import HTMLResponse
 from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
 from pydantic import BaseModel
+from uvicorn import Config, Server
 
 from kraken import Kraken
 
@@ -61,12 +56,10 @@ async def fetch_manifest() -> Any:
 @version(1, 0)
 async def get_installed_extensions() -> Any:
     extensions = await kraken.get_configured_extensions()
-    return [Extension(
-        name=extension.name,
-        tag=extension.tag,
-        permissions=extension.permissions,
-        enabled=extension.enabled
-    ) for extension in extensions]
+    return [
+        Extension(name=extension.name, tag=extension.tag, permissions=extension.permissions, enabled=extension.enabled)
+        for extension in extensions
+    ]
 
 
 @app.post("/extension/install", status_code=status.HTTP_201_CREATED)
@@ -74,15 +67,18 @@ async def get_installed_extensions() -> Any:
 async def install_extension(extension: Extension) -> Any:
     return await kraken.install_extension(extension)
 
+
 @app.post("/extension/uninstall", status_code=status.HTTP_201_CREATED)
 @version(1, 0)
 async def uninstall_extension(extension_name: str) -> Any:
     return await kraken.uninstall_extension(extension_name)
 
+
 @app.post("/extension/disable", status_code=status.HTTP_201_CREATED)
 @version(1, 0)
 async def disable_extension(extension_name: str) -> Any:
     return await kraken.disable_extension(extension_name)
+
 
 @app.get("/list_containers", status_code=status.HTTP_200_OK)
 @version(1, 0)
@@ -110,5 +106,23 @@ async def root() -> Any:
 
 
 if __name__ == "__main__":
-    # Running uvicorn with log disabled so loguru can handle it
-    uvicorn.run(app, host="0.0.0.0", port=9134, log_config=None)
+    logging.basicConfig(level=logging.DEBUG)
+    #logger.add(get_new_log_path(SERVICE_NAME))
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--debug", action="store_true")
+    args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger("kraken").setLevel(logging.DEBUG)
+
+    logger.info("Releasing the Kraken service.")
+
+    loop = asyncio.new_event_loop()
+
+    config = Config(app=app, loop=loop, host="0.0.0.0", port=9134, log_config=None)
+    server = Server(config)
+
+    loop.create_task(kraken.run())
+    loop.run_until_complete(server.serve())
+    loop.run_until_complete(kraken.stop())

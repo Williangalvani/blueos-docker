@@ -1,17 +1,13 @@
-import json
 import re
-import socket
 from typing import Any, Dict, List
+import re
+import json
 
-import psutil
 from commonwealth.settings import settings
 from loguru import logger
 from pykson import (
     BooleanField,
-    IntegerField,
     JsonObject,
-    ListField,
-    ObjectField,
     ObjectListField,
     StringField,
 )
@@ -22,6 +18,16 @@ class Extension(JsonObject):
     tag = StringField()
     permissions = StringField()
     enabled = BooleanField()
+
+    def settings(self):
+        return json.loads(self.permissions)
+
+    def fullname(self):
+        return f"{self.name}:{self.tag}"
+
+    def container_name(self):
+        regex = re.compile('[^a-zA-Z]')
+        return "extension-" + regex.sub('', f"{self.name}{self.tag}")
 
 
 class SettingsV1(settings.BaseSettings):
