@@ -253,7 +253,16 @@ export default Vue.extend({
         title: 'Extensions',
         icon: 'mdi-puzzle',
         extension: true,
-        submenus,
+        submenus: [
+          {
+            title: 'Extensions Manager',
+            icon: 'mdi-puzzle',
+            route: '/tools/extensions-manager',
+            advanced: false,
+            text: 'Manage BlueOS extensions',
+          },
+          ...submenus,
+        ],
       }
 
       const full_menu = { ...this.menus }

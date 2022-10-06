@@ -119,13 +119,6 @@ const menus = [
         advanced: false,
         text: 'Manage BlueOS versions and update to the latest available',
       },
-      {
-        title: 'Extensions Manager',
-        icon: 'mdi-puzzle',
-        route: '/tools/extensions-manager',
-        advanced: false,
-        text: 'Manage BlueOS extensions',
-      },
     ],
   },
 ]
