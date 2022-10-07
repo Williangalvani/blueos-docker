@@ -40,6 +40,7 @@ class Kraken:
         await container.start()
 
     async def check(self, extension: Extension) -> None:
+        # Names is a list of ("name", "tag"). we check only the first, only expected tag
         if not any(container["Names"][0][1:] == extension.container_name() for container in self.running_containers):
             await self.start_extension(extension)
 

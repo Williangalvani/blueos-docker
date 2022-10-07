@@ -63,21 +63,21 @@
               </v-col>
             </v-row>
             <h3
-              v-if="extension && extension.website"
+              v-if="selected?.website"
               class="ma-2"
             >
               Website:
             </h3>
-            <a :href="extension ? extension.website : null">
-              {{ extension ? extension.website : '' }}</a>
+            <a :href="selected?.website">
+              {{ selected?.website }}</a>
             <h3
-              v-if="extension && extension.docs"
+              v-if="selected?.docs"
               class="ma-2"
             >
               Docs:
             </h3>
-            <a :href="extension ? extension.docs : null">
-              {{ extension ? extension.docs : '' }}</a>
+            <a :href="selected?.docs">
+              {{ selected?.docs }}</a>
 
             <h3
               v-if="permissions"
@@ -96,7 +96,7 @@
                 <pre>{{ permissions }}</pre>
               </v-card-text>
             </v-card>
-            <span v-if="extension.company">
+            <span v-if="selected?.company">
               <v-card
                 class="mt-2"
                 outlined
@@ -107,22 +107,22 @@
                 >
                   <v-img
                     class="ma-2"
-                    :src="extension.company.logo"
+                    :src="selected?.company.logo"
                     max-height="30"
                     max-width="30"
                   />
                   <h3 class="ma-2">
-                    {{ extension.company.name }}
+                    {{ selected?.company.name }}
                   </h3>
                 </span>
-                <v-card-text v-if="extension.company.about">
-                  {{ extension.company.about }}
+                <v-card-text v-if="selected?.company.about">
+                  {{ selected?.company.about }}
                 </v-card-text>
                 <v-card-text>
                   Written by:
                   <ul>
                     <li
-                      v-for="author in (extension ? extension.authors : [])"
+                      v-for="author in (selected?.authors ?? [])"
                       :key="author.email"
                     >
                       {{ author.name }} &#60;{{ author.email }}>
@@ -142,7 +142,7 @@
 import { marked } from 'marked'
 import Vue, { PropType } from 'vue'
 
-import { ExtensionData } from '@/types/kraken'
+import { ExtensionData, Version } from '@/types/kraken'
 
 export default Vue.extend({
   name: 'ExtensionModal',
@@ -163,11 +163,14 @@ export default Vue.extend({
     }
   },
   computed: {
+    selected(): Version | null {
+      return this.selected_version ? this.extension.versions[this.selected_version] : null
+    },
     compiled_markdown(): string {
-      if (this.extension?.readme === undefined || this.extension?.readme === null) {
+      if (this.selected?.readme === undefined || this.selected?.readme === null) {
         return 'No readme available'
       }
-      return marked(this.extension.readme, { sanitize: true })
+      return marked(this.selected.readme, { sanitize: true })
     },
     available_tags(): string[] {
       if (this.extension && this.extension.versions) {

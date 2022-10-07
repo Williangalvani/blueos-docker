@@ -16,18 +16,18 @@ export interface Version {
     permissions: any
     requirements: string | null
     tag: string
+    authors?: Author[]
+    docs?: string
+    support?: string
+    readme?: string
+    website: string
+    company?: Company
 }
 
 export interface ExtensionData {
     name: string
     description: string
     docker: string
-    website: string
     versions: Dictionary<Version>
-    authors?: Author[]
-    readme?: string
-    support?: string
-    docs?: string
     extension_logo?: string
-    company?: Company
 }
