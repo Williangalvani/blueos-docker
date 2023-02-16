@@ -10,7 +10,6 @@
         </v-card>
         <v-card class="mt-3">
           <v-simple-table
-            v-tooltip="'Not Implemented'"
             dense
           >
             <template #default>
@@ -36,7 +35,9 @@
                       :min="1000"
                       :max="2000"
                       value="1500"
-                      disabled
+                      :model="motor_targets[printParam(motor)]"
+                      @input="updateMotor(motor, $event)"
+                      @change="reset_motor_tests"
                     />
                   </td>
                 </tr>
@@ -117,6 +118,7 @@ export default Vue.extend({
       highlight: null as string | null,
       edit_param_dialog: false,
       param: undefined as Parameter | undefined,
+      motor_targets: {} as Dictionary<number>,
     }
   },
   computed: {
@@ -137,6 +139,14 @@ export default Vue.extend({
       )
     },
   },
+  watch: {
+    available_motors(new_value: Parameter[]) {
+      console.log('changed')
+      for (const motor_param of new_value) {
+        this.motor_targets[printParam(motor_param)] = 1500
+      }
+    },
+  },
   methods: {
     showParamEdit(param: Parameter) {
       this.param = param
@@ -146,6 +156,20 @@ export default Vue.extend({
       return param_value_map?.[this.vehicle_type ?? '']?.[text] ?? text
     },
     printParam,
+    updateMotor(motor: Parameter, event: number) {
+      const motor_number = /\d+/g.exec(printParam(motor))?.[0] ?? 0
+      console.log(motor_number, event)
+      console.log(event)
+      this.motor_targets[printParam(motor)] = event
+      console.log(this.motor_targets)
+    },
+    reset_motor_tests() {
+      console.log('resetting')
+      for (const motor of Object.keys(this.motor_targets)) {
+        this.motor_targets[motor] = 1500
+      }
+      console.log(this.motor_targets)
+    },
   },
 })
 </script>
