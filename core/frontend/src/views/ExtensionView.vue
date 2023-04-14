@@ -16,7 +16,7 @@ export default Vue.extend({
   },
   computed: {
     service_path() {
-      return `${window.location.protocol}//${window.location.hostname}:${this.$route.params.port}`
+      return `${window.location.protocol}//${window.location.hostname}/extension_https/${this.$route.params.port}`
     },
   },
 })
