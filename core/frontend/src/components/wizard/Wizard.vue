@@ -64,7 +64,10 @@
               <v-text-field v-model="vehicle_name" label="Vehicle Name" />
               <v-text-field v-model="mdns_name" label="MDNS Name" />
             </div>
-
+            <DefaultParamLoader
+              v-model="params"
+              :vehicle="vehicle_type"
+            />
             <v-alert :value="configuration_failed" type="error">
               {{ error_message }}
             </v-alert>
@@ -155,13 +158,16 @@ import '@google/model-viewer/dist/model-viewer'
 import Vue from 'vue'
 
 import { availableFirmwares, installFirmwareFromUrl } from '@/components/autopilot/AutopilotManagerUpdater'
+import mavlink2rest from '@/libs/MAVLink2Rest'
 import bag from '@/store/bag'
 import beacon from '@/store/beacon'
 import wifi from '@/store/wifi'
 import { Firmware, Vehicle } from '@/types/autopilot'
+import { Dictionary } from '@/types/common'
 import back_axios from '@/utils/api'
 
 import ActionStepper, { Configuration, ConfigurationStatus } from './ActionStepper.vue'
+import DefaultParamLoader from './DefaultParamLoader.vue'
 import RequireInternet from './RequireInternet.vue'
 
 const WIZARD_VERSION = 4
@@ -171,11 +177,6 @@ const models = require.context(
   true,
   /\.(glb|json)$/,
 )
-
-enum VehicleType {
-  Sub,
-  Boat,
-}
 
 enum ApplyStatus {
   Waiting,
@@ -193,6 +194,9 @@ interface VehicleConfigurationPage {
 
 export default Vue.extend({
   name: 'Wizard',
+  components: {
+    DefaultParamLoader,
+  },
   data() {
     return {
       boat_model: models('./boat/UNDEFINED.glb'),
@@ -204,9 +208,10 @@ export default Vue.extend({
       step_number: 1,
       sub_model: models('./bluerov.glb'),
       vehicle_name: 'blueos',
-      vehicle_type: VehicleType.Sub,
+      vehicle_type: Vehicle.Sub,
       vehicle_image: null as string | null,
       wait_configuration: false,
+      params: {} as Dictionary<number>,
       // Final configuration
       configurations: [] as Configuration[],
       // Vehicle configuration
@@ -314,7 +319,7 @@ export default Vue.extend({
       })).then((configs) => configs.every((config) => config.done)) ? ApplyStatus.Done : ApplyStatus.Failed
     },
     setupBoat() {
-      this.vehicle_type = VehicleType.Boat
+      this.vehicle_type = Vehicle.Rover
       this.vehicle_name = 'BlueBoat'
       this.vehicle_image = '/vehicles/images/bb120.png'
       this.step_number += 1
@@ -354,7 +359,7 @@ export default Vue.extend({
       this.step_number += 1
     },
     setupROV() {
-      this.vehicle_type = VehicleType.Sub
+      this.vehicle_type = Vehicle.Sub
       this.vehicle_name = 'BlueROV'
       this.vehicle_image = '/vehicles/images/bluerov2.png'
       this.step_number += 1
@@ -422,6 +427,11 @@ export default Vue.extend({
         .then(() => undefined)
         .catch((error) => `Failed to disable smart wifi hotspot: ${error.message ?? error.response?.data}.`)
     },
+    async updateFirmwareParameters() {
+      for (const [key, value] of Object.entries(this.params)) {
+        mavlink2rest.setParam(key, value)
+      }
+    },
     async installLatestStableFirmware(vehicle: Vehicle): Promise<ConfigurationStatus> {
       return availableFirmwares(vehicle)
         .then((firmwares: Firmware[]) => {
@@ -430,7 +440,7 @@ export default Vue.extend({
             return `Failed to find a stable version for vehicle (${vehicle})`
           }
           return installFirmwareFromUrl(found.url)
-            .then(() => undefined)
+            .then(() => this.updateFirmwareParameters().then(() => undefined).catch(() => undefined))
             .catch((error) => `Failed to install firmware: ${error.message ?? error.response?.data}.`)
         })
         .catch((error) => `Failed to install stable firmware: ${error.message ?? error.response?.data}.`)
