@@ -10,6 +10,7 @@ TOOLS=(
     linux2rest
     mavlink2rest
     mavlink_router
+    mavp2p
     ttyd
 )
 
