@@ -44,6 +44,7 @@ COPY --from=downloadBinaries \
     /usr/bin/bridges \
     /usr/bin/mavlink2rest \
     /usr/bin/mavlink-routerd \
+    /usr/bin/mavp2p \
     /usr/bin/ttyd \
     /usr/bin/
 
