@@ -4,6 +4,8 @@
 # Immediately exit on errors
 set -e
 
+# Any changes in this file should reflect in the Dockerfile as well,
+# since we get this binaries from multstage
 TOOLS=(
     blueos_startup_update
     bridges
