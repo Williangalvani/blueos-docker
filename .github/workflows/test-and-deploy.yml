@@ -30,6 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo ./core/tools/mavlink_router/bootstrap.sh
+        sudo ./core/tools/mavp2p/bootstrap.sh
         ./core/tools/ardupilot_tools/bootstrap.sh
         sudo apt install shellcheck
         npm install \
