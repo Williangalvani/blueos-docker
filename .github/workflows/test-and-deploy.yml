@@ -27,7 +27,14 @@ jobs:
       with:
         python-version: ${{ env.python-version }}
 
-    - name: Install dependencies
+
+
+    - name: Bootstrap tools
+      run: |
+        sudo ./core/tools/mavlink_router/bootstrap.sh
+        ./core/tools/ardupilot_tools/bootstrap.sh
+
+    - name: Install npm dependencies
       run: |
         sudo ./core/tools/mavlink_router/bootstrap.sh
         ./core/tools/ardupilot_tools/bootstrap.sh
@@ -37,20 +44,17 @@ jobs:
           @typescript-eslint/eslint-plugin typescript @vue/eslint-config-airbnb@^5.3.0 @vue/cli-service \
           eslint-plugin-simple-import-sort \
           --save-dev
+
+    - name: install python dependencies
+      run: |
         python -m pip install --upgrade pip
-        pip install wheel # wheel need to be installed before mavproxy
-        pip install mavproxy
-        pip install pyfakefs pytest-cov pytest-timeout pylint pylint-pydantic mypy isort black==22.1.0 asyncmock types-requests \
-          pytest-mock nmeasim geographiclib ruff
-        pip install git+https://github.com/patrickelectric/pykson.git@master_fixes
+        pip install pipenv
+        pipenv install
         ## Install our own libraries
-        python ./core/libs/bridges/setup.py install
-        python ./core/libs/commonwealth/setup.py install
+        pipenv run ./core/libs/bridges/setup.py install
+        pipenv run ./core/libs/commonwealth/setup.py install
         ## We need to install loguru and appdirs since they may be used inside setup.py
-        python -m pip install --user appdirs==1.4.4 loguru==0.5.3
         find . -type f -name "setup.py" | xargs --max-lines=1 --replace=% python % install --user
-        ## Fix Click version since its being updated to an old version by our packages
-        pip install click==8.0.0
 
     - name: Run tests
       run: |
