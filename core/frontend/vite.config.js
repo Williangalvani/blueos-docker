@@ -1,16 +1,21 @@
-import vue from '@vitejs/plugin-vue2'
-import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
-import Components from 'unplugin-vue-components/vite'
-import { defineConfig } from 'vite'
-import { VitePWA } from 'vite-plugin-pwa'
-const { name } = require('./package.json')
+import vue from '@vitejs/plugin-vue2';
+import { VuetifyResolver } from 'unplugin-vue-components/resolvers';
+import Components from 'unplugin-vue-components/vite';
+import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-process.env.PROJECT_NAME = name
-process.env.VITE_BUILD_DATE = new Date().toLocaleString()
-const DEFAULT_ADDRESS = 'http://blueos.local/'
-const SERVER_ADDRESS = process.env.BLUEOS_ADDRESS ?? DEFAULT_ADDRESS
+// Convert the file URL to a file path for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const path = require('path')
+// Use fs to read package.json
+const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, './package.json')));
+
+process.env.PROJECT_NAME = packageJson.name;
+process.env.VITE_BUILD_DATE = new Date().toLocaleString();
 
 export default defineConfig({
   plugins: [
@@ -60,105 +65,5 @@ export default defineConfig({
   },
   define: {
     'process.env': {},
-  },
-  server: {
-    port: 8080,
-    proxy: {
-      '^/status': {
-        target: SERVER_ADDRESS,
-      },
-      '^/ardupilot-manager': {
-        target: SERVER_ADDRESS,
-      },
-      '^/bag': {
-        target: SERVER_ADDRESS,
-      },
-      '^/beacon': {
-        target: SERVER_ADDRESS,
-      },
-      '^/bridget': {
-        target: SERVER_ADDRESS,
-      },
-      '^/cable-guy': {
-        target: SERVER_ADDRESS,
-      },
-      '^/commander': {
-        target: SERVER_ADDRESS,
-      },
-      '^/docker': {
-        target: SERVER_ADDRESS,
-      },
-      '^/file-browser': {
-        target: SERVER_ADDRESS,
-      },
-      '^/helper': {
-        target: SERVER_ADDRESS,
-      },
-      '^/upload': {
-        target: SERVER_ADDRESS,
-      },
-      '^/kraken': {
-        target: SERVER_ADDRESS,
-        onProxyRes: (proxyRes, request, response) => {
-          proxyRes.on('data', (data) => {
-            response.write(data)
-          })
-          proxyRes.on('end', () => {
-            response.end()
-          })
-        },
-      },
-      '^/nmea-injector': {
-        target: SERVER_ADDRESS,
-      },
-      '^/logviewer': {
-        target: SERVER_ADDRESS,
-      },
-      '^/mavlink': {
-        target: SERVER_ADDRESS,
-        changeOrigin: true,
-        ws: true,
-      },
-      '^/mavlink2rest': {
-        target: SERVER_ADDRESS,
-        changeOrigin: true,
-        ws: true,
-      },
-      '^/mavlink-camera-manager': {
-        target: SERVER_ADDRESS,
-      },
-      '^/network-test': {
-        target: SERVER_ADDRESS,
-      },
-      '^/ping': {
-        target: SERVER_ADDRESS,
-      },
-      '^/system-information': {
-        target: SERVER_ADDRESS,
-      },
-      '^/terminal': {
-        target: SERVER_ADDRESS,
-      },
-      '^/userdata': {
-        target: SERVER_ADDRESS,
-      },
-      '^/vehicles': {
-        target: SERVER_ADDRESS,
-      },
-      '^/version-chooser': {
-        target: SERVER_ADDRESS,
-        onProxyRes: (proxyRes, request, response) => {
-          proxyRes.on('data', (data) => {
-            response.write(data)
-          })
-          proxyRes.on('end', () => {
-            response.end()
-          })
-        },
-      },
-      '^/wifi-manager': {
-        target: SERVER_ADDRESS,
-      },
-    },
   },
 })
