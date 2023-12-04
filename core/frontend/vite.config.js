@@ -3,6 +3,7 @@ import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import express from 'express'
 const { name } = require('./package.json')
 
 process.env.PROJECT_NAME = name
@@ -11,6 +12,8 @@ const DEFAULT_ADDRESS = 'http://blueos.local/'
 const SERVER_ADDRESS = process.env.BLUEOS_ADDRESS ?? DEFAULT_ADDRESS
 
 const path = require('path')
+
+const app = express();
 
 export default defineConfig({
   plugins: [
@@ -62,6 +65,9 @@ export default defineConfig({
     'process.env': {},
   },
   server: {
+    middlewares: (app) => {
+      app.use('/api', expressApp);
+    },
     port: 8080,
     proxy: {
       '^/status': {
