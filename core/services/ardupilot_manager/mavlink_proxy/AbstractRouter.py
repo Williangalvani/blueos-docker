@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import pathlib
 import shlex
 import shutil
@@ -109,6 +110,7 @@ class AbstractRouter(metaclass=abc.ABCMeta):
             logger.debug(info)
             logger.error(error)
             raise MavlinkRouterStartFail(f"Failed to initialize Mavlink router ({exit_code}): {error}.")
+        self.start_house_keepers()
 
     def exit(self) -> None:
         if self.is_running():
@@ -116,6 +118,36 @@ class AbstractRouter(metaclass=abc.ABCMeta):
             self._subprocess.kill()  # type: ignore
         else:
             logger.debug("Tried to stop router, but it was already not running.")
+
+    def start_house_keepers(self) -> None:
+        if self._subprocess is None:
+            return
+        # Ensure that the logging tasks are awaited and executed
+        try:
+            asyncio.create_task(self._log_stdout())
+            asyncio.create_task(self._log_stderr())
+        except RuntimeError:
+            logger.debug("Failed to create house keeping tasks. This is expected on testing environment.")
+
+    async def _log_stdout(self) -> None:
+        while self._subprocess is not None:
+            if self._subprocess.stdout:
+                stdout_line = await self._subprocess.stdout.readline()
+                if stdout_line:
+                    logger.debug(f"Router: {stdout_line.decode().strip()}")
+                else:
+                    break  # EOF reached
+            await asyncio.sleep(0.01)
+
+    async def _log_stderr(self) -> None:
+        while self._subprocess is not None:
+            if self._subprocess.stderr:
+                stderr_line = await self._subprocess.stderr.readline()
+                if stderr_line:
+                    logger.debug(f"Router: {stderr_line.decode().strip()}")
+                else:
+                    break  # EOF reached
+            await asyncio.sleep(0.01)
 
     def restart(self) -> None:
         if self._master_endpoint is None:
