@@ -48,6 +48,12 @@ else
     echo "Error: blueos static system configuration folder does not exist!"
 fi
 
+# Define the log file path
+LOG_FILE="/var/logs/start-blueos-core/service_restarts.log"
+
+# Ensure the log directory exists
+mkdir -p $(dirname "$LOG_FILE")
+
 # This is a workaround to make the container's `resolv.conf` synchronized with the host's
 # `resolv.conf`. To do that, we disallow docker from managing the container's DNS nameservers
 # by unmounting the container's `/etc/resolv.conf`, and soft linking it to the binded host's

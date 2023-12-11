@@ -19,7 +19,11 @@
         v-for="page in pages"
         :key="page.value"
       >
-        <param-sets v-if="page.value === 'parameters'" />
+        <param-sets v-if="page.value === 'parameters' && page.value === 'parameters'" />
+        <template v-if="page.value === 'compass' && pages[page_selected ?? 0].value === 'compass'">
+          <ardupilot-mavlink-compass-setup v-if="params_loaded" />
+          <spinning-logo v-else size="30%" :subtitle="`${loaded_params}/${total_params} parameters loaded`" />
+        </template>
       </v-tab-item>
     </v-tabs-items>
   </v-container>
@@ -28,6 +32,10 @@
 <script lang="ts">
 import Vue from 'vue'
 
+import autopilot_data from '@/store/autopilot'
+
+import SpinningLogo from '../common/SpinningLogo.vue'
+import ArdupilotMavlinkCompassSetup from './configuration/compass/ArdupilotMavlinkCompassSetup.vue'
 import ParamSets from './overview/ParamSets.vue'
 
 export interface Item {
@@ -40,10 +48,12 @@ export default Vue.extend({
   name: 'Configure',
   components: {
     ParamSets,
+    ArdupilotMavlinkCompassSetup,
+    SpinningLogo,
   },
   data() {
     return {
-      page_selected: null as string | null,
+      page_selected: null as number | null,
       pages: [
         { title: 'Parameters', value: 'parameters' },
         { title: 'Compass', value: 'compass' },
@@ -55,6 +65,17 @@ export default Vue.extend({
 
       ] as Item[],
     }
+  },
+  computed: {
+    params_loaded(): boolean {
+      return autopilot_data.finished_loading
+    },
+    loaded_params(): number {
+      return autopilot_data.parameters_loaded
+    },
+    total_params(): number {
+      return autopilot_data.parameters_total
+    },
   },
 })
 </script>
