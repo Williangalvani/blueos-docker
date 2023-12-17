@@ -318,6 +318,7 @@ class ArduPilotManager(metaclass=Singleton):
         self.ardupilot_subprocess = subprocess.Popen(
             [
                 firmware_path,
+                "-S",
                 "--model",
                 self.current_sitl_frame.value,
                 "--base-port",
