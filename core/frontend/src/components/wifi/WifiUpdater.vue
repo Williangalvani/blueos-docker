@@ -17,6 +17,9 @@ const notifier = new Notifier(wifi_service)
 export default Vue.extend({
   name: 'WifiUpdater',
   mounted() {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     callPeriodically(this.fetchSavedNetworks, 5000)
     callPeriodically(this.fetchNetworkStatus, 5000)
     callPeriodically(this.fetchHotspotStatus, 10000)

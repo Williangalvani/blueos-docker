@@ -72,6 +72,9 @@ class BridgetStore extends VuexModule {
 
   @Action
   async fetchAvailableBridges(): Promise<void> {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     if (prefetched_bridges && !this.listener_number) {
       return
     }
@@ -96,6 +99,9 @@ class BridgetStore extends VuexModule {
 
   @Action
   async fetchAvailableSerialPorts(): Promise<void> {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     if (prefetched_serial && !this.listener_number) {
       return
     }

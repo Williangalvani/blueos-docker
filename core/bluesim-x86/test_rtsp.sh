@@ -1,0 +1,1 @@
+gst-launch-1.0 rtspsrc is-live=true latency=0 location=rtsp://127.0.0.1:8554/test ! rtph264depay ! avdec_h264 ! videoconvert ! fpsdisplaysink

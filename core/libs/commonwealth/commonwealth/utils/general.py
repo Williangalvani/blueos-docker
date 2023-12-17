@@ -11,6 +11,8 @@ from loguru import logger
 from commonwealth.utils.decorators import temporary_cache
 
 
+is_demo_mode = os.environ.get("BLUEOS_DEMO_MODE", "false").lower() == "true"
+
 @cache
 def blueos_version() -> str:
     return os.environ.get("GIT_DESCRIBE_TAGS", "null")

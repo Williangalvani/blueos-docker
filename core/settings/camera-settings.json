@@ -1,0 +1,32 @@
+{
+    "header": {
+      "name": "Camera Manager",
+      "version": 0
+    },
+    "mavlink_endpoint": "tcpout:127.0.0.1:5777",
+    "streams": [
+      {
+        "name": "Stream Redirect",
+        "stream_information": {
+          "endpoints": [
+            "rtsp://127.0.0.1:8554/test"
+          ],
+          "configuration": {
+            "type": "redirect"
+          },
+          "extended_configuration": {
+            "thermal": false,
+            "disable_mavlink": true
+          }
+        },
+        "video_source": {
+          "Redirect": {
+            "name": "Redirect source",
+            "source": {
+              "Redirect": "Redirect"
+            }
+          }
+        }
+      }
+    ]
+  }

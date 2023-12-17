@@ -11,6 +11,7 @@ setup(
     install_requires=[
         "aiodocker == 0.21.0",
         "aiohttp == 3.7.4",
+        "chardet==3.0.4",
         "aiohttp-jinja2 == 1.4.2",
         "appdirs == 1.4.4",
         "asyncmock == 0.4.2",

@@ -22,7 +22,7 @@ class Settings:
 
     blueos_files_folder = Path.joinpath(Path.home(), "blueos-files")
     defaults_folder = Path.joinpath(blueos_files_folder, "ardupilot-manager/default")
-    sitl_frame = SITLFrame.UNDEFINED
+    sitl_frame = SITLFrame.JSON
     preferred_router: Optional[str] = None
 
     def __init__(self) -> None:

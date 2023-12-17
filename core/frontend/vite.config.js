@@ -9,6 +9,7 @@ process.env.PROJECT_NAME = name
 process.env.VITE_BUILD_DATE = new Date().toLocaleString()
 const DEFAULT_ADDRESS = 'http://blueos-avahi.local/'
 const SERVER_ADDRESS = process.env.BLUEOS_ADDRESS ?? DEFAULT_ADDRESS
+const VITE_DEMO_MODE = true //process.env.VITE_DEMO_MODE ?? false
 
 const path = require('path')
 const assert = require('assert');
@@ -64,6 +65,7 @@ export default defineConfig({
   },
   define: {
     'process.env': {},
+    'import.meta.env.VITE_DEMO_MODE': JSON.stringify(VITE_DEMO_MODE)
   },
   server: {
     port: 8080,

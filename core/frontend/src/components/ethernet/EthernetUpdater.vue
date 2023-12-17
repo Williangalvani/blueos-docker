@@ -16,6 +16,9 @@ const notifier = new Notifier(ethernet_service)
 export default Vue.extend({
   name: 'EthernetUpdater',
   mounted() {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     callPeriodically(this.fetchAvailableInterfaces, 5000)
   },
   methods: {
