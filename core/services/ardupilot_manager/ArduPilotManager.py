@@ -320,6 +320,7 @@ class ArduPilotManager(metaclass=Singleton):
         self.ardupilot_subprocess = subprocess.Popen(
             [
                 firmware_path,
+                "-S",
                 "--model",
                 self.current_sitl_frame.value,
                 "--base-port",
@@ -503,7 +504,6 @@ class ArduPilotManager(metaclass=Singleton):
             self.should_be_running = False
 
     async def start_ardupilot(self) -> None:
-        await self.setup()
         try:
             available_boards = self.available_boards()
             if not available_boards:

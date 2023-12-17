@@ -35,7 +35,7 @@ from nginx_parser import parse_nginx_file
 SERVICE_NAME = "helper"
 SPEED_TEST: Optional[Speedtest] = None
 
-limit_ram_usage(200)
+limit_ram_usage(500)
 
 logging.basicConfig(handlers=[InterceptHandler()], level=logging.DEBUG)
 try:
@@ -98,6 +98,7 @@ class ServiceMetadata(BaseModel):
     webpage: str
     route: Optional[str]
     new_page: Optional[bool]
+    extra_query: Optional[str]
     api: str
     sanitized_name: Optional[str]
 

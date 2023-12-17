@@ -31,7 +31,7 @@ from typedefs import Firmware, FlightController, Parameters, Serial, SITLFrame, 
 FRONTEND_FOLDER = Path.joinpath(Path(__file__).parent.absolute(), "frontend")
 
 # We need additional RAM in order to decompress the manifest file
-limit_ram_usage(200)
+limit_ram_usage(500)
 
 parser = argparse.ArgumentParser(description="ArduPilot Manager service for Blue Robotics BlueOS")
 parser.add_argument("-s", "--sitl", help="run SITL instead of connecting any board", action="store_true")
@@ -278,9 +278,10 @@ if __name__ == "__main__":
     loop = asyncio.new_event_loop()
 
     # # Running uvicorn with log disabled so loguru can handle it
-    config = Config(app=app, loop=loop, host="0.0.0.0", port=8000, log_config=None)
+    config = Config(app=app, loop=loop, port=8567, log_config=None)
     server = Server(config)
 
+    loop.run_until_complete(autopilot.setup())
     if args.sitl:
         autopilot.set_preferred_board(BoardDetector.detect_sitl())
     try:

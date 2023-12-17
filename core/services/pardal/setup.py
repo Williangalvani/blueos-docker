@@ -9,7 +9,9 @@ setuptools.setup(
     license="MIT",
     install_requires=[
         "aiohttp == 3.7.4",
+        "chardet==3.0.4",
         "commonwealth == 0.1.0",
+        "chardet==3.0.4",
         "loguru == 0.5.3",
     ],
 )

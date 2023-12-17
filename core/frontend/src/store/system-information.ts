@@ -170,6 +170,9 @@ class SystemInformationStore extends VuexModule {
 
   @Action
   async fetchSystemInformation(type: FetchType): Promise<void> {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     // Do not fetch system specific information if system is not populate yet
     // system type does not have optional fields, they need to be populate before fetching it
     switch (type) {

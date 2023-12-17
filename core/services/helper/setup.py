@@ -10,6 +10,7 @@ setup(
     py_modules=[],
     install_requires=[
         "aiofiles == 0.6.0",
+        "chardet==3.0.4",
         "beautifulsoup4 == 4.9.3",
         "commonwealth == 0.1.0",
         "fastapi == 0.105.0",
