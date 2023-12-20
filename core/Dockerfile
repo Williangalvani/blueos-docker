@@ -137,7 +137,8 @@ RUN sudo apt-get update && sudo apt-get install -y \
     libgl1-mesa-dri \
     libxkbcommon0 \
     libgstreamer-plugins-bad1.0-0 \
-    Libgstrtspserver-1.0-0 \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-rtsp \
     && sudo rm -rf /var/lib/apt/lists/*
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
