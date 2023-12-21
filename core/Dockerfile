@@ -16,6 +16,14 @@ FROM bluerobotics/blueos-base:v0.0.10 as downloadBinaries
 COPY tools /home/pi/tools
 RUN /home/pi/tools/install-static-binaries.sh
 
+#cockpit
+FROM --platform=$BUILDPLATFORM oven/bun:1.0.3-slim AS cockpitBuilder
+
+RUN apt update && apt install -y git
+RUN git clone --depth 1 --recurse-submodules https://github.com/bluerobotics/cockpit.git /frontend
+RUN bun install --cwd /frontend
+RUN bun run --cwd /frontend build
+
 # BlueOS-docker base image
 FROM ghcr.io/selkies-project/nvidia-glx-desktop:latest
 
@@ -97,9 +105,6 @@ COPY --from=downloadBinaries \
 # Copy frontend built on frontendBuild to this stage
 COPY --from=frontendBuilder /home/pi/frontend/dist /home/pi/frontend
 
-COPY bluesim-x86 /home/pi/bluesim
-RUN sudo chmod +x /home/pi/bluesim/BlueSim.x86_64
-
 # Asserts
 ## When running, the .config folder in the docker is not accessible,
 ## since it gets shadowed by the host's `.config` folder.
@@ -157,11 +162,20 @@ RUN mkdir -p /home/user/.config/autostart
 # create a .desktop entry for bluesim at /home/user/.config/autostart
 RUN echo "[Desktop Entry]" > /home/user/.config/autostart/bluesim.desktop
 RUN echo "Type=Application" >> /home/user/.config/autostart/bluesim.desktop
-RUN echo "Exec=/home/pi/bluesim/BlueSim.x86_64" >> /home/user/.config/autostart/bluesim.desktop
+RUN echo "Exec=/home/pi/bluesim/BlueSim.x86_64 --no-sitl --pool" >> /home/user/.config/autostart/bluesim.desktop
 RUN echo "Hidden=false" >> /home/user/.config/autostart/bluesim.desktop
 RUN echo "NoDisplay=false" >> /home/user/.config/autostart/bluesim.desktop
 RUN echo "Name=BlueSim" >> /home/user/.config/autostart/bluesim.desktop
 
+# add cockpit
+RUN sudo wget https://github.com/TheWaWaR/simple-http-server/releases/download/v0.6.6/x86_64-unknown-linux-musl-simple-http-server \
+    -O /usr/bin/simple-http-server
+RUN sudo chmod 777 /usr/bin/simple-http-server
+COPY --from=cockpitBuilder /frontend/dist /cockpit
+
+
+COPY bluesim-x86 /home/pi/bluesim
+RUN sudo chmod +x /home/pi/bluesim/BlueSim.x86_64
 
 EXPOSE 8080
 
