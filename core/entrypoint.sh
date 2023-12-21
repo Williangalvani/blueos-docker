@@ -1,6 +1,5 @@
 #!/bin/bash
 
-printenv > /tmp/env.txt
-sudo bash -c "source /tmp/env.txt && /usr/bin/start-blueos-core"
-sudo /usr/bin/start-blueos-core &&
+printenv | grep '^VAST' > /tmp/env.txt
+sudo bash -c "set -a && source /tmp/env.txt && set +a && /usr/bin/start-blueos-core"
 /usr/bin/supervisord

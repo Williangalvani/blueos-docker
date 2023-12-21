@@ -20,7 +20,7 @@ RUN /home/pi/tools/install-static-binaries.sh
 FROM --platform=$BUILDPLATFORM oven/bun:1.0.3-slim AS cockpitBuilder
 
 RUN apt update && apt install -y git
-RUN git clone --depth 1 --recurse-submodules https://github.com/bluerobotics/cockpit.git /frontend
+RUN git clone --depth 1 --recurse-submodules --branch webrtc https://github.com/williangalvani/cockpit.git /frontend
 RUN bun install --cwd /frontend
 RUN bun run --cwd /frontend build
 
@@ -144,6 +144,7 @@ RUN sudo apt-get update && sudo apt-get install -y \
     libgstreamer-plugins-bad1.0-0 \
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-rtsp \
+    gstreamer1.0 \
     && sudo rm -rf /var/lib/apt/lists/*
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
@@ -177,6 +178,10 @@ COPY --from=cockpitBuilder /frontend/dist /cockpit
 COPY bluesim-x86 /home/pi/bluesim
 RUN sudo chmod +x /home/pi/bluesim/BlueSim.x86_64
 
+RUN sudo mkdir -p /root/.config/mavlink-camera-manager/
+COPY settings/camera-settings.json /root/.config/mavlink-camera-manager/settings.json
+COPY tools/mavlink_camera_manager/mavlink-camera-manager-linux-desktop /usr/bin/mavlink-camera-manager
+RUN sudo chmod +x /usr/bin/mavlink-camera-manager
 EXPOSE 8080
 
 

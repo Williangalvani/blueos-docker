@@ -77,7 +77,7 @@ sudo mkdir -p $(dirname "$LOG_FILE")
 PRIORITY_SERVICES=(
     'autopilot',"nice --19 $SERVICES_PATH/ardupilot_manager/main.py -s"
     #'cable_guy',"$SERVICES_PATH/cable_guy/main.py"
-    'video',"nice --19 mavlink-camera-manager --default-settings BlueROVUDP --mavlink tcpout:127.0.0.1:5777 --gst-feature-rank omxh264enc=0,v4l2h264enc=250,x264enc=260 --log-path /var/logs/blueos/services/mavlink-camera-manager --verbose"
+    'video',"nice --19 mavlink-camera-manager --default-settings BlueROVUDP --mavlink tcpout:127.0.0.1:5777 --gst-feature-rank omxh264enc=0,v4l2h264enc=250,x264enc=260 --log-path /var/logs/blueos/services/mavlink-camera-manager --verbose  --stun-server stun.l.google.com:19302 --signalling-server=ws://0.0.0.0:$VAST_TCP_PORT_70001"
     'mavlink2rest',"mavlink2rest --connect=udpin:127.0.0.1:14000 --server 0.0.0.0:6040 --system-id $MAV_SYSTEM_ID --component-id $MAV_COMPONENT_ID_ONBOARD_COMPUTER4"
 )
 
