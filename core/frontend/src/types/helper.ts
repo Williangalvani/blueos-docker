@@ -19,6 +19,7 @@ export interface Service {
     port: number
     path?: string
     metadata?: ServiceMetadata
+    extra_query?: string
 }
 
 export interface SpeedtestServer {
