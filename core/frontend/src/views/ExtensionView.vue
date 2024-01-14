@@ -50,9 +50,11 @@ export default Vue.extend({
       )[0]?.port ?? null
     },
     service_path(): string {
+      const query = this.service?.metadata?.extra_query
+      console.log(query)
       return `${window.location.protocol}//${window.location.hostname}:${this.detected_port}`
       + `/${this.remaining_path ?? ''}`
-      + `?${this.service?.metadata?.extra_query ?? ''}`
+      + (query ? `?${query}` : '')
     },
     service_name(): string {
       return this.service?.metadata?.name ?? 'BlueOS Extension'
