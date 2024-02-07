@@ -3,8 +3,13 @@ import {
   getModule, Module, Mutation, VuexModule,
 } from 'vuex-module-decorators'
 
+import Notifier from '@/libs/notifier'
 import store from '@/store'
+import beacon from '@/store/beacon'
+import { settings_service } from '@/types/frontend_services'
 import { castString } from '@/utils/helper_functions'
+
+const notifier = new Notifier(settings_service)
 
 @Module({
   dynamic: true,
@@ -19,6 +24,11 @@ class SettingsStore extends VuexModule {
   is_dark_theme: boolean = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
 
   is_pirate_mode = false
+
+  // Secret mode for developers that know our secret.
+  // It's enabled when the vehicle name is 'Sir Francis Drake', one the most famous pirates,
+  // and the pirate mode toggled to be enabled.
+  is_dev_mode = false
 
   last_version_update_notification_time = 0 // Start in 1970: https://www.youtube.com/watch?v=wwcKs5K1oWg
 
@@ -35,6 +45,7 @@ class SettingsStore extends VuexModule {
   @Mutation
   setPirateMode(value: boolean): void {
     this.is_pirate_mode = value
+    SettingsStore.checkDevMode()
     SettingsStore.save()
   }
 
@@ -54,6 +65,18 @@ class SettingsStore extends VuexModule {
   setTopWidgets(widgets: string[]): void {
     this.user_top_widgets = widgets
     SettingsStore.save()
+  }
+
+  static checkDevMode(): void {
+    const { is_pirate_mode } = SettingsStore.state
+    const is_dev_mode = beacon.vehicle_name === 'Sir Francis Drake' && is_pirate_mode
+    Vue.set(SettingsStore.state, 'is_dev_mode', is_dev_mode)
+
+    if (is_dev_mode) {
+      const message = 'You are in the secret developer mode. Be careful with your actions.'
+        + 'Sir Francis Drake is watching you.'
+      notifier.pushInfo('SECRET_DEV_MODE_ENABLED', message)
+    }
   }
 
   /**

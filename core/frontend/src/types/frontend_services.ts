@@ -146,3 +146,10 @@ export const version_chooser_service: Service = {
   company: 'Blue Robotics',
   version: '0.1.0',
 }
+
+export const settings_service: Service = {
+  name: 'Settings service',
+  description: 'Manage frontend settings',
+  company: 'Blue Robotics',
+  version: '0.1.0',
+}
