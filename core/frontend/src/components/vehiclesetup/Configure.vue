@@ -91,7 +91,6 @@ export default Vue.extend({
   data() {
     return {
       page_selected: null as string | null,
-      is_dev_mode: settings.is_dev_mode,
       pages: [
         { title: 'Parameters', component: ParamSets },
         { title: 'Accelerometer', component: undefined },
@@ -107,6 +106,9 @@ export default Vue.extend({
     filtered_pages() {
       // eslint-disable-next-line no-extra-parens
       return this.pages.filter((page) => (page.filter ? page.filter() : true))
+    },
+    is_dev_mode() {
+      return settings.is_dev_mode
     },
   },
 })

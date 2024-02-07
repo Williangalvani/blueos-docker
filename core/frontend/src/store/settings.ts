@@ -25,11 +25,6 @@ class SettingsStore extends VuexModule {
 
   is_pirate_mode = false
 
-  // Secret mode for developers that know our secret.
-  // It's enabled when the vehicle name is 'Sir Francis Drake', one the most famous pirates,
-  // and the pirate mode toggled to be enabled.
-  is_dev_mode = false
-
   last_version_update_notification_time = 0 // Start in 1970: https://www.youtube.com/watch?v=wwcKs5K1oWg
 
   tour_version = 0
@@ -45,7 +40,6 @@ class SettingsStore extends VuexModule {
   @Mutation
   setPirateMode(value: boolean): void {
     this.is_pirate_mode = value
-    SettingsStore.checkDevMode()
     SettingsStore.save()
   }
 
@@ -67,16 +61,12 @@ class SettingsStore extends VuexModule {
     SettingsStore.save()
   }
 
-  static checkDevMode(): void {
-    const { is_pirate_mode } = SettingsStore.state
-    const is_dev_mode = beacon.vehicle_name === 'Sir Francis Drake' && is_pirate_mode
-    Vue.set(SettingsStore.state, 'is_dev_mode', is_dev_mode)
-
-    if (is_dev_mode) {
-      const message = 'You are in the secret developer mode. Be careful with your actions.'
-        + 'Sir Francis Drake is watching you.'
-      notifier.pushInfo('SECRET_DEV_MODE_ENABLED', message)
-    }
+  // Secret mode for developers that know our secret.
+  // It's enabled when the vehicle name is 'Sir Francis Drake', one the most famous pirates,
+  // and the pirate mode toggled to be enabled.
+  get is_dev_mode() {
+    const is_dev_mode = beacon.vehicle_name === 'Sir Francis Drake' && this.is_pirate_mode
+    return is_dev_mode
   }
 
   /**
