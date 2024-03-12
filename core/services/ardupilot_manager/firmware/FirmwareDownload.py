@@ -192,7 +192,7 @@ class FirmwareDownloader:
                     raise NoVersionAvailable(f"No firmware versions found for {platform}/{vehicle}.")
                 version = f"STABLE-{newest_version}"
             else:
-                version = "BETA"
+                version = "STABLE"
 
         items = self._find_version_item(
             vehicletype=vehicle.value,
