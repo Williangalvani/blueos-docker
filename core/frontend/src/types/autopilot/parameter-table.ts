@@ -1,8 +1,5 @@
 import { isNumber } from 'lodash'
 
-import * as arducopter_metadata from '@/ArduPilot-Parameter-Repository/Copter-4.3/apm.pdef.json'
-import * as ardurover_metadata from '@/ArduPilot-Parameter-Repository/Rover-4.2/apm.pdef.json'
-import * as ardusub_metadata from '@/ArduPilot-Parameter-Repository/Sub-4.1/apm.pdef.json'
 import { fetchVehicleType } from '@/components/autopilot/AutopilotManagerUpdater'
 import autopilot from '@/store/autopilot_manager'
 import { Dictionary } from '@/types/common'
@@ -47,7 +44,7 @@ export default class ParametersTable {
     this.parametersDict = {}
   }
 
-  fetchMetadata(): void {
+  async fetchMetadata(): Promise<void> {
     if (autopilot.vehicle_type === null) {
       // Check again later if we have a vehicle type identified
       fetchVehicleType()
@@ -55,16 +52,19 @@ export default class ParametersTable {
       return
     }
     // default to submarine
-    let metadata : MetadataFile = ardusub_metadata
-    // This is to avoid importing a 40 lines enum from mavlink and adding a switch case with 40 cases
-    if (autopilot.vehicle_type.toLowerCase().includes('copter')
-      || autopilot.vehicle_type.toLowerCase().includes('rotor')) {
-      metadata = arducopter_metadata
-    } else if (autopilot.vehicle_type.toLowerCase().includes('rover')
-      || autopilot.vehicle_type.toLowerCase().includes('boat')) {
-      metadata = ardurover_metadata
+    let metadata: MetadataFile
+    // TODO: use firmware_vehicle_type to check actual firmware instead of vehicle type
+    switch (autopilot.vehicle_type) {
+      case "Copter":
+        metadata = await import('@/ArduPilot-Parameter-Repository/Copter-4.3/apm.pdef.json');
+        break;
+      case "Ground Rover":
+      case "Surface Boat":
+        metadata = await import('@/ArduPilot-Parameter-Repository/Rover-4.2/apm.pdef.json')
+        break;
+      case "Submarine":
+        metadata = await import('@/ArduPilot-Parameter-Repository/Sub-4.1/apm.pdef.json')
     }
-
     for (const category of Object.values(metadata)) {
       for (const [name, parameter] of Object.entries(category)) {
         if (isNumber(parameter)) { // ignore "json" entry
