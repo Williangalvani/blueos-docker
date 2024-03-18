@@ -340,7 +340,6 @@ import Vue from 'vue'
 
 import blueos_blue from '@/assets/img/blueos-logo-blue.svg'
 import blueos_white from '@/assets/img/blueos-logo-white.svg'
-import Wizard from '@/components/wizard/Wizard.vue'
 import settings from '@/libs/settings'
 import helper from '@/store/helper'
 import wifi from '@/store/wifi'
@@ -372,6 +371,7 @@ import WifiUpdater from './components/wifi/WifiUpdater.vue'
 import menus, { menuItem } from './menus'
 import Cpu from './widgets/Cpu.vue'
 import Disk from './widgets/Disk.vue'
+import { defineAsyncComponent } from 'vue'
 
 export default Vue.extend({
   name: 'App',
@@ -397,7 +397,7 @@ export default Vue.extend({
     'new-version-notificator': NewVersionNotificator,
     SystemCheckerTrayMenu,
     VehicleRebootRequiredTrayMenu,
-    Wizard,
+    Wizard: defineAsyncComponent( () => import('@/components/wizard/Wizard.vue')),
   },
 
   data: () => ({
