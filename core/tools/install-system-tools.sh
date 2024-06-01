@@ -10,7 +10,7 @@ TOOLS=(
     linux2rest
     logviewer
     mavlink_camera_manager
-    scripts
+    # scripts
 )
 
 parallel --halt now,fail=1 '/home/pi/tools/{}/bootstrap.sh' ::: "${TOOLS[@]}"
