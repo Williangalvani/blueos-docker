@@ -11,8 +11,8 @@ echo "Target architecture: $TARGETARCH"
 echo "Target variant: $TARGETVARIANT"
 
 # psutil requires BUILD_PACKAGES to build to all platforms
-apt update
-apt install -y --no-install-recommends ${BUILD_PACKAGES[*]}
+#apt update
+#apt install -y --no-install-recommends ${BUILD_PACKAGES[*]}
 
 # Piwheels is a Python package repository providing Arm platform wheels (pre-compiled binary Python packages)
 # specifically for the Raspberry Pi, making pip installations much faster.
@@ -31,6 +31,6 @@ pip3 install https://codeload.github.com/patrickelectric/pykson/zip/fcab71c1eadd
 pip3 install -e $CURRENT_PATH/bridges
 pip3 install -e $CURRENT_PATH/commonwealth
 
-apt -y remove ${BUILD_PACKAGES[*]}
-apt -y autoremove
-apt -y clean
+#apt -y remove ${BUILD_PACKAGES[*]}
+#apt -y autoremove
+#apt -y clean
