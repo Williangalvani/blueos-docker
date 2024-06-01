@@ -184,18 +184,16 @@ class FirmwareDownloader:
         # Navigator) we use latest BETA. Specially on this development phase of the BlueOS/navigator, using
         # the BETA release allow us to track and fix introduced bugs faster.
         if not version:
-            if firmware_format == FirmwareFormat.APJ:
-                supported_versions = [version for version in versions if "STABLE" in version]
-                newest_version: Optional[str] = None
-                for supported_version in supported_versions:
-                    semver_version = supported_version.split("-")[1]
-                    if not newest_version or Version(newest_version) < Version(semver_version):
-                        newest_version = semver_version
-                if not newest_version:
-                    raise NoVersionAvailable(f"No firmware versions found for {platform}/{vehicle}.")
-                version = f"STABLE-{newest_version}"
-            else:
-                version = "BETA"
+            supported_versions = [version for version in versions if "STABLE" in version]
+            newest_version: Optional[str] = None
+            for supported_version in supported_versions:
+                semver_version = supported_version.split("-")[1]
+                if not newest_version or Version(newest_version) < Version(semver_version):
+                    newest_version = semver_version
+            if not newest_version:
+                raise NoVersionAvailable(f"No firmware versions found for {platform}/{vehicle}.")
+            version = f"STABLE-{newest_version}"
+
 
         items = self._find_version_item(
             vehicletype=vehicle.value,
