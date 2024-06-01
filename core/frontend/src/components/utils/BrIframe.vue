@@ -21,6 +21,7 @@
       width="100%"
       frameBorder="0"
       allowfullscreen
+      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-top-navigation"
       @load="loadFinished"
     />
   </v-sheet>
