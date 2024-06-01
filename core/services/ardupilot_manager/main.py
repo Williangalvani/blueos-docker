@@ -32,9 +32,11 @@ if __name__ == "__main__":
     logger.info("Releasing the AutoPilot Manager service.")
     loop = asyncio.new_event_loop()
 
-    config = Config(app=application, loop=loop, host=args.host, port=args.port, log_config=None)
+    # # Running uvicorn with log disabled so loguru can handle it
+    config = Config(app=app, loop=loop, host="0.0.0.0", port=8567, log_config=None)
     server = Server(config)
 
+    loop.run_until_complete(autopilot.setup())
     if args.sitl:
         autopilot.set_preferred_board(BoardDetector.detect_sitl())
     try:
