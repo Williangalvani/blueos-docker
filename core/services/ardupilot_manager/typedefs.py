@@ -57,8 +57,8 @@ class SITLFrame(str, Enum):
     AIRSIM = "airsim"
     SCRIMMAGE = "scrimmage"
     WEBOTS = "webots"
-    JSON = " JSON"
-    UNDEFINED = " undefined"
+    JSON = "JSON"
+    UNDEFINED = "undefined"
 
 
 def get_sitl_platform_name(machine_arch: str) -> str:
