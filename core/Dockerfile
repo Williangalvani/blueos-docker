@@ -30,8 +30,18 @@ FROM base AS download-binaries
 COPY tools /home/pi/tools
 RUN /home/pi/tools/install-static-binaries.sh
 
-# BlueOS base image
-FROM base
+#cockpit
+FROM --platform=$BUILDPLATFORM node:18-buster-slim AS cockpitBuilder
+RUN mkdir /frontend && ls /frontend && echo "why"
+
+RUN apt update && apt install -y git \
+  && ls && git clone --depth 1 --recurse-submodules --branch webrtc https://github.com/williangalvani/cockpit.git /frontend
+RUN yarn --cwd /frontend install --network-timeout=300000
+ARG DEMO_BUILD
+RUN VITE_DEMO_MODE=$DEMO_MODE yarn --cwd /frontend build
+
+# BlueOS-docker base image
+FROM williangalvani/nvidia-glx-desktop-lite:shrinking_plus_blueos
 
 # Define arguments for target platform
 # These arguments are defined automatically by buildx when using `--platform`
@@ -64,11 +74,11 @@ ENV TARGETVARIANT=${TARGETVARIANT}
 
 # Install necessary tools
 COPY tools /home/pi/tools
-RUN /home/pi/tools/install-system-tools.sh
+RUN sudo /home/pi/tools/install-system-tools.sh
 
 # Install custom libraries
 COPY libs /home/pi/libs
-RUN /home/pi/libs/install-libs.sh
+RUN sudo /home/pi/libs/install-libs.sh
 
 # Set tmux configuration file
 COPY configuration/tmux.conf /etc/tmux.conf
@@ -76,7 +86,7 @@ COPY configuration/motd /etc/motd
 
 # Install services
 COPY services /home/pi/services
-RUN /home/pi/services/install-services.sh
+RUN sudo /home/pi/services/install-services.sh
 COPY start-blueos-core /usr/bin/start-blueos-core
 COPY run-service.sh /usr/bin/run-service
 
@@ -132,5 +142,61 @@ set -e
 
 EOF
 
-# Start
-CMD ["/bin/bash", "-i", "-c", "/usr/bin/start-blueos-core && sleep infinity"]
+ARG DEMO_BUILD
+
+# Update blueosrc with the necessary environment variables
+RUN export RCFILE_PATH="/etc/blueosrc"
+RUN sudo touch "/etc/blueosrc"
+RUN sudo chmod 777 "/etc/blueosrc"
+RUN RCFILE_PATH="/etc/blueosrc" \
+    && echo "export GIT_DESCRIBE_TAGS=$GIT_DESCRIBE_TAGS" >> $RCFILE_PATH \
+    && echo "export HISTFILE=/etc/blueos/.bash_history" >> $RCFILE_PATH \
+    && echo "export PATH=/usr/blueos/bin:$PATH" >> $RCFILE_PATH \
+    && echo "export BLUEOS_DEMO_MODE=$DEMO_BUILD" >> $RCFILE_PATH
+
+# create some Symlinks to make life easier
+RUN sudo mkdir -p /shortcuts
+RUN sudo ln -s /root/.config /shortcuts/configs
+RUN sudo ln -s /var/logs/blueos/services /shortcuts/system_logs
+RUN sudo ln -s /usr/blueos/userdata /shortcuts/userdata
+RUN sudo ln -s /usr/blueos/extensions /shortcuts/extensions
+RUN sudo ln -s /root/.config/ardupilot-manager /shortcuts/ardupilot_logs
+RUN sudo ln -s / /shortcuts/system_root
+
+LABEL org.opencontainers.image.source="https://github.com/williangalvani/BlueOS-docker"
+LABEL org.opencontainers.image.description="Bluesim tests"
+LABEL org.opencontainers.image.licenses="GPL-3.0"
+
+COPY supervisord.conf /etc/supervisord.conf
+RUN sudo chmod 755 /etc/supervisord.conf
+
+COPY entrypoint.sh /usr/bin/entrypoint.sh
+USER 1000
+
+RUN sudo mkdir -p /etc/xdg/lxsession/LXDE && echo "@/home/pi/bluesim/BlueSim.x86_64 --pool" | sudo tee -a /etc/xdg/lxsession/LXDE/autostart
+
+# add cockpit
+RUN sudo wget https://github.com/TheWaWaR/simple-http-server/releases/download/v0.6.6/x86_64-unknown-linux-musl-simple-http-server \
+    -O /usr/bin/simple-http-server
+RUN sudo chmod 777 /usr/bin/simple-http-server
+COPY --from=cockpitBuilder /frontend/dist /cockpit
+
+
+COPY bluesim-x86 /home/pi/bluesim
+RUN sudo chmod +x /home/pi/bluesim/BlueSim.x86_64
+
+RUN sudo mkdir -p /root/.config/mavlink-camera-manager/
+COPY settings/camera-settings.json /root/.config/mavlink-camera-manager/settings.json
+COPY settings/bag-of-holding /root/.config/
+EXPOSE 8080
+COPY settings/eeprom.bin /root/.config/ardupilot-manager/firmware/eeprom.bin
+
+# ubuntu shenanigans...
+# this is required for camera manager
+RUN wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb && sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb
+
+ENV SHELL /bin/bash
+ENV USER user
+WORKDIR /home/user
+
+ENTRYPOINT ["/usr/bin/entrypoint.sh"]
