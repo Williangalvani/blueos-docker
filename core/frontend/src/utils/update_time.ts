@@ -5,6 +5,9 @@ import back_axios from '@/utils/api'
 const notifier = new Notifier(update_time_service)
 
 export default async function run() : Promise<void> {
+  if (import.meta.env.VITE_DEMO_MODE) {
+    return
+  }
   await back_axios({
     url: '/commander/v1.0/set_time',
     method: 'post',

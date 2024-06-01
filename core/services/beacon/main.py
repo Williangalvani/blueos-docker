@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 import psutil
 from commonwealth.settings.manager import Manager
 from commonwealth.utils.apis import PrettyJSONResponse
+from commonwealth.utils.general import is_demo_mode
 from commonwealth.utils.logs import init_logger
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -232,6 +233,10 @@ class Beacon:
             self.settings = self.manager.settings
             self.service_types = self.load_service_types()
 
+            if is_demo_mode:
+                logger.info("Running in demo mode, not broadcasting anything.")
+                await asyncio.sleep(10)
+                continue
             default_runners = self.create_default_runners()
             user_runners = self.create_user_runners()
 

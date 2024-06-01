@@ -26,6 +26,7 @@ from commonwealth.utils.general import (
     blueos_version,
     local_hardware_identifier,
     local_unique_identifier,
+    is_demo_mode,
 )
 from commonwealth.utils.logs import InterceptHandler, init_logger
 from fastapi import FastAPI, HTTPException
@@ -476,6 +477,11 @@ class Helper:
     @staticmethod
     @temporary_cache(timeout_seconds=5)
     def check_internet_access() -> Dict[str, WebsiteStatus]:
+        if is_demo_mode:
+            return {
+                site.name: WebsiteStatus(site=site, online=True)
+                for site in Website
+            }
         # 10 concurrent executors is fine here because its a very short/light task
         with futures.ThreadPoolExecutor(max_workers=10) as executor:
             tasks = [executor.submit(Helper.check_website, site) for site in Website]

@@ -23,6 +23,7 @@ class HostOs(str, Enum):
     Bullseye = "Debian(Raspberry Pi OS?) 11 (Bullseye)"
     Other = "Other"
 
+is_demo_mode = os.environ.get("BLUEOS_DEMO_MODE", "false").lower() == "true"
 
 @cache
 def blueos_version() -> str:

@@ -86,6 +86,9 @@ export default Vue.extend({
   },
   methods: {
     async check_host_computer_access(): Promise<undefined | TestOutput> {
+      if (import.meta.env.VITE_DEMO_MODE) {
+        return undefined
+      }
       const output = await commander.commandHost('uname -a')
       if (output === undefined || output.return_code === 0) {
         return undefined

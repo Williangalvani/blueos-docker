@@ -206,7 +206,9 @@ export default Vue.extend({
       await filebrowser.downloadFolder(folder)
     },
     async get_log_folder_size(): Promise<void> {
-      this.prepare_operation('Checking system log size...')
+      if (import.meta.env.VITE_DEMO_MODE) {
+        return
+      }
       await back_axios({
         url: `${API_URL}/services/check_log_folder_size`,
         method: 'get',

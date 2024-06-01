@@ -104,6 +104,9 @@ function getMaster(versions_query: VersionsQuery): Version | undefined {
 }
 
 function getLatestVersion(versions_query: VersionsQuery, current_version: Version): Version | undefined {
+  if (import.meta.env.VITE_DEMO_MODE) {
+    return undefined
+  }
   const beta_version = getLatestBeta(versions_query)
   const stable_version = getLatestStable(versions_query)
 
@@ -141,6 +144,13 @@ async function loadLocalVersions(): Promise<LocalVersionsQuery> {
 }
 
 async function loadAvailableVersions(remote_image_name?: string): Promise<VersionsQuery> {
+  if (import.meta.env.VITE_DEMO_MODE) {
+    return {
+      local: [],
+      remote: [],
+      error: null,
+    }
+  }
   remote_image_name = remote_image_name ?? DEFAULT_REMOTE_IMAGE
   return back_axios({
     method: 'get',
@@ -152,6 +162,14 @@ async function loadAvailableVersions(remote_image_name?: string): Promise<Versio
 }
 
 async function loadCurrentVersion(): Promise<Version> {
+  if (import.meta.env.VITE_DEMO_MODE) {
+    return {
+      repository: 'williangalvani/blueos-core',
+      tag: '1.0.0-demo',
+      last_modified: '2021-09-02T13:00:00Z',
+      sha: null,
+    }
+  }
   return back_axios({
     method: 'get',
     url: `${API_URL}/version/current/`,
@@ -159,6 +177,9 @@ async function loadCurrentVersion(): Promise<Version> {
 }
 
 async function loadBootstrapCurrentVersion(): Promise<string | undefined> {
+  if (import.meta.env.VITE_DEMO_MODE) {
+    return undefined
+  }
   return back_axios({
     method: 'get',
     url: `${API_URL}/bootstrap/current/`,

@@ -151,6 +151,9 @@ class BeaconStore extends VuexModule {
 
   @Action
   async fetchAvailableDomains(): Promise<void> {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     if (prefetched_domains && !this.listeners_count) {
       return
     }
@@ -172,6 +175,9 @@ class BeaconStore extends VuexModule {
 
   @Action
   async fetchIpInfo(): Promise<void> {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     if (prefetched_ips && !this.listeners_count) {
       return
     }
@@ -195,6 +201,12 @@ class BeaconStore extends VuexModule {
 
   @Action
   async fetchVehicleAndHostname(): Promise<void> {
+    console.log("VITE_DEMO_MODE")
+    console.log(import.meta.env.VITE_DEMO_MODE)
+    if (import.meta.env.VITE_DEMO_MODE) {
+      this._setHostname('DemoROV')
+      this._setVehicleName('Demo ROV')
+    }
     if (prefetched_names && !this.listeners_count) {
       return
     }

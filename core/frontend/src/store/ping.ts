@@ -55,6 +55,9 @@ class PingStore extends VuexModule {
 
   @Action
   async fetchAvailablePingDevices(): Promise<void> {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     if (prefecthed_pings && !this.ping_listeners_number) {
       return
     }

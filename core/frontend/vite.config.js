@@ -9,6 +9,7 @@ process.env.PROJECT_NAME = name
 process.env.VITE_BUILD_DATE = new Date().toLocaleString()
 const DEFAULT_ADDRESS = 'http://blueos-avahi.local/'
 const SERVER_ADDRESS = process.env.BLUEOS_ADDRESS ?? DEFAULT_ADDRESS
+const VITE_DEMO_MODE = true //process.env.VITE_DEMO_MODE ?? false
 
 const path = require('path')
 const assert = require('assert');
@@ -57,10 +58,55 @@ export default defineConfig(({ command, mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    build: {
-      rollupOptions: {
-        input: {
-          main: path.resolve(__dirname, 'index.html'),
+  define: {
+    'process.env': {},
+    'import.meta.env.VITE_DEMO_MODE': JSON.stringify(VITE_DEMO_MODE)
+  },
+  server: {
+    port: 8080,
+    proxy: {
+      '^/status': {
+        target: SERVER_ADDRESS,
+      },
+      '^/ardupilot-manager': {
+        target: SERVER_ADDRESS,
+      },
+      '^/bag': {
+        target: SERVER_ADDRESS,
+      },
+      '^/beacon': {
+        target: SERVER_ADDRESS,
+      },
+      '^/bridget': {
+        target: SERVER_ADDRESS,
+      },
+      '^/cable-guy': {
+        target: SERVER_ADDRESS,
+      },
+      '^/commander': {
+        target: SERVER_ADDRESS,
+      },
+      '^/docker': {
+        target: SERVER_ADDRESS,
+      },
+      '^/file-browser': {
+        target: SERVER_ADDRESS,
+      },
+      '^/helper': {
+        target: SERVER_ADDRESS,
+      },
+      '^/upload': {
+        target: SERVER_ADDRESS,
+      },
+      '^/kraken': {
+        target: SERVER_ADDRESS,
+        onProxyRes: (proxyRes, request, response) => {
+          proxyRes.on('data', (data) => {
+            response.write(data)
+          })
+          proxyRes.on('end', () => {
+            response.end()
+          })
         },
       },
     },

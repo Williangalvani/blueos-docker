@@ -26,6 +26,9 @@ export default Vue.extend({
     }
   },
   mounted() {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     this.fetch_saved_networks_task.setAction(this.fetchSavedNetworks)
     this.fetch_network_status_task.setAction(this.fetchNetworkStatus)
     this.fetch_hotspot_status_task.setAction(this.fetchHotspotStatus)

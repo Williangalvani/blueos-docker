@@ -21,6 +21,9 @@ export default Vue.extend({
     }
   },
   mounted() {
+    if (import.meta.env.VITE_DEMO_MODE) {
+      return
+    }
     this.fetch_available_interfaces_task.setAction(this.fetchAvailableInterfaces)
   },
   methods: {
