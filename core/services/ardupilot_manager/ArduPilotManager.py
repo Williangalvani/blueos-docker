@@ -300,7 +300,7 @@ class ArduPilotManager(metaclass=Singleton):
             self.firmware_manager.install_firmware_from_params(Vehicle.Sub, self._current_board)
         frame = self.settings.sitl_frame
         if frame == SITLFrame.UNDEFINED:
-            frame = SITLFrame.VECTORED
+            frame = SITLFrame.MOTORBOAT
             logger.warning(f"SITL frame is undefined. Setting {frame} as current frame.")
         self.current_sitl_frame = frame
 
