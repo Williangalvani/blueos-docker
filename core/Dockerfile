@@ -117,21 +117,21 @@ set -e
 
     # Update blueosrc with the necessary environment variables
     RCFILE_PATH="/etc/blueosrc"
-    echo "export GIT_DESCRIBE_TAGS=$GIT_DESCRIBE_TAGS" >> $RCFILE_PATH
-    echo "export HISTFILE=/etc/blueos/.bash_history" >> $RCFILE_PATH
-    echo "export PATH=$(python -m site --user-base)/bin:/usr/blueos/bin:$PATH" >> $RCFILE_PATH
+    echo "export GIT_DESCRIBE_TAGS=$GIT_DESCRIBE_TAGS" | sudo tee -a $RCFILE_PATH
+    echo "export HISTFILE=/etc/blueos/.bash_history" | sudo tee -a $RCFILE_PATH
+    echo "export PATH=$(python -m site --user-base)/bin:/usr/blueos/bin:$PATH" | sudo tee -a $RCFILE_PATH
 
     # Setup shortcuts
-    mkdir -p /shortcuts
-    ln -s /root/.config /shortcuts/configs
-    ln -s /var/logs/blueos/services /shortcuts/system_logs
-    ln -s /usr/blueos/userdata /shortcuts/userdata
-    ln -s /usr/blueos/extensions /shortcuts/extensions
-    ln -s /root/.config/ardupilot-manager /shortcuts/ardupilot_logs
-    ln -s / /shortcuts/system_root
+    sudo mkdir -p /shortcuts
+    sudo ln -s /root/.config /shortcuts/configs
+    sudo ln -s /var/logs/blueos/services /shortcuts/system_logs
+    sudo ln -s /usr/blueos/userdata /shortcuts/userdata
+    sudo ln -s /usr/blueos/extensions /shortcuts/extensions
+    sudo ln -s /root/.config/ardupilot-manager /shortcuts/ardupilot_logs
+    sudo ln -s / /shortcuts/system_root
 
     # Setup user
-    useradd -m -u 1000 -G dialout blueos
+    sudo useradd -m -G dialout blueos
 
     # Remove /etc/dhcpcd.conf if it exists inside the docker
     # This is to prevent an awkward behavior where docker doesnt find the file
@@ -153,15 +153,6 @@ RUN RCFILE_PATH="/etc/blueosrc" \
     && echo "export HISTFILE=/etc/blueos/.bash_history" >> $RCFILE_PATH \
     && echo "export PATH=/usr/blueos/bin:$PATH" >> $RCFILE_PATH \
     && echo "export BLUEOS_DEMO_MODE=$DEMO_BUILD" >> $RCFILE_PATH
-
-# create some Symlinks to make life easier
-RUN sudo mkdir -p /shortcuts
-RUN sudo ln -s /root/.config /shortcuts/configs
-RUN sudo ln -s /var/logs/blueos/services /shortcuts/system_logs
-RUN sudo ln -s /usr/blueos/userdata /shortcuts/userdata
-RUN sudo ln -s /usr/blueos/extensions /shortcuts/extensions
-RUN sudo ln -s /root/.config/ardupilot-manager /shortcuts/ardupilot_logs
-RUN sudo ln -s / /shortcuts/system_root
 
 LABEL org.opencontainers.image.source="https://github.com/williangalvani/BlueOS-docker"
 LABEL org.opencontainers.image.description="Bluesim tests"
