@@ -41,7 +41,7 @@ ARG DEMO_BUILD
 RUN VITE_DEMO_MODE=$DEMO_MODE yarn --cwd /frontend build
 
 # BlueOS-docker base image
-FROM williangalvani/nvidia-glx-desktop-lite:shrinking_plus_blueos
+FROM williangalvani/nvidia-glx-desktop-lite:shrinking_plus_blueos_dev
 
 # Define arguments for target platform
 # These arguments are defined automatically by buildx when using `--platform`
