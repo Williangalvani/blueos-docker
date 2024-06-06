@@ -3,7 +3,7 @@
 export BLUEOS_COCKPIT_PORT=${VAST_TCP_PORT_70000:-6042}
 export BLUEOS_SIGNALING_SERVER_PORT=${VAST_TCP_PORT_70001:-6041}
 if [ -z "$PUBLIC_IPADDR" ]; then
-  export PUBLIC_IPADDR=$(curl ifconfig.me)
+  export PUBLIC_IPADDR=$(curl -4 ifconfig.me)
 fi
 
 printenv | grep '^VAST' > /tmp/env.txt
