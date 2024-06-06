@@ -35,7 +35,7 @@ FROM --platform=$BUILDPLATFORM node:18-buster-slim AS cockpitBuilder
 RUN mkdir /frontend && ls /frontend && echo "why"
 
 RUN apt update && apt install -y git \
-  && ls && git clone --depth 1 --recurse-submodules --branch webrtc https://github.com/williangalvani/cockpit.git /frontend
+  && ls && git clone --depth 1 --recurse-submodules https://github.com/bluerobotics/cockpit.git /frontend
 RUN yarn --cwd /frontend install --network-timeout=300000
 ARG DEMO_BUILD
 RUN VITE_DEMO_MODE=$DEMO_MODE yarn --cwd /frontend build
