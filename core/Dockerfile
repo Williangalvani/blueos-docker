@@ -182,10 +182,6 @@ COPY settings/bag-of-holding /root/.config/
 EXPOSE 8080
 COPY settings/eeprom.bin /root/.config/ardupilot-manager/firmware/eeprom.bin
 
-# ubuntu shenanigans...
-# this is required for camera manager
-RUN wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb && sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2.22_amd64.deb
-
 ENV SHELL /bin/bash
 ENV USER user
 WORKDIR /home/user
