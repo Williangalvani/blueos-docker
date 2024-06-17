@@ -422,7 +422,7 @@ class AutoPilotManager(metaclass=Singleton):
                 "--base-port",
                 str(master_endpoint.argument),
                 "--home",
-                "-27.563,-48.459,0.0,270.0",
+                "RATBeach",
             ],
             shell=False,
             encoding="utf-8",
