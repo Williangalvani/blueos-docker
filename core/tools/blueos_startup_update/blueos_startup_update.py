@@ -472,8 +472,7 @@ def main() -> int:
         fix_ssh_ownership,
     ]
 
-    # this will always be pi4 as pi5 is not supported
-    if host_os == HostOs.Bullseye:
+    if host_cpu == CpuType.PI4:
         patches_to_apply.extend([update_navigator_overlays])
 
     if host_cpu == CpuType.PI4 or CpuType.PI5:
