@@ -33,7 +33,7 @@ if __name__ == "__main__":
     loop = asyncio.new_event_loop()
 
     # # Running uvicorn with log disabled so loguru can handle it
-    config = Config(app=app, loop=loop, host="0.0.0.0", port=8567, log_config=None)
+    config = Config(app=application, loop=loop, host="0.0.0.0", port=8567, log_config=None)
     server = Server(config)
 
     loop.run_until_complete(autopilot.setup())

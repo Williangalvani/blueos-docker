@@ -31,7 +31,7 @@ COPY tools /home/pi/tools
 RUN /home/pi/tools/install-static-binaries.sh
 
 #cockpit
-FROM --platform=$BUILDPLATFORM node:18-buster-slim AS cockpitBuilder
+FROM --platform=$BUILDPLATFORM node:20-buster-slim AS cockpitBuilder
 RUN mkdir /frontend && ls /frontend && echo "why"
 
 RUN apt update && apt install -y git \
@@ -138,7 +138,7 @@ set -e
     # on the host system and creates a folder instead, but tries to mount the folder
     # on top of the existing file inside the docker.
     # This allows docker to actually create a folder, which we handle in networksetup.py
-    rm -f /etc/dhcpcd.conf
+    # rm -f /etc/dhcpcd.conf
 
 EOF
 

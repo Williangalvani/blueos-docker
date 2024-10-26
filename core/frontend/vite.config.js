@@ -17,7 +17,7 @@ const assert = require('assert');
 // TODO: check if it works with https once we have something that does
 assert.ok(SERVER_ADDRESS.startsWith('http://'), 'SERVER_ADDRESS must start with http://');
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     plugins: [
@@ -100,7 +100,7 @@ export default defineConfig(({ command, mode }) => {
       },
       '^/kraken': {
         target: SERVER_ADDRESS,
-        onProxyRes: (proxyRes, request, response) => {
+        onProxyRes: (proxyRes, response) => {
           proxyRes.on('data', (data) => {
             response.write(data)
           })
@@ -225,4 +225,4 @@ export default defineConfig(({ command, mode }) => {
       },
     },
   }
-})
+}})

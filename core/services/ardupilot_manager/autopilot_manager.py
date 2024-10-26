@@ -92,15 +92,6 @@ class AutoPilotManager(metaclass=Singleton):
                 overwrite_settings=True,
             ),
             Endpoint(
-                name="Zenoh Deamon",
-                owner=self.settings.app_name,
-                connection_type=EndpointType.Zenoh,
-                place="0.0.0.0",
-                argument=7117,
-                persistent=True,
-                protected=True,
-            ),
-            Endpoint(
                 name="Internal Link",
                 owner=self.settings.app_name,
                 connection_type=EndpointType.TCPServer,
@@ -109,15 +100,6 @@ class AutoPilotManager(metaclass=Singleton):
                 persistent=True,
                 protected=True,
                 overwrite_settings=True,
-            ),
-            Endpoint(
-                name="Ping360 Heading",
-                owner=self.settings.app_name,
-                connection_type=EndpointType.UDPServer,
-                place="0.0.0.0",
-                argument=14660,
-                persistent=True,
-                protected=True,
             ),
         ]
 
@@ -396,7 +378,7 @@ class AutoPilotManager(metaclass=Singleton):
             self.firmware_manager.install_firmware_from_params(Vehicle.Sub, self._current_board)
         frame = self.load_sitl_frame()
         if frame == SITLFrame.UNDEFINED:
-            frame = SITLFrame.VECTORED
+            frame = SITLFrame.JSON
             logger.warning(f"SITL frame is undefined. Setting {frame} as current frame.")
         self.current_sitl_frame = frame
 
