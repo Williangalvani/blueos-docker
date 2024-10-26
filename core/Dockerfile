@@ -164,7 +164,7 @@ RUN sudo chmod 755 /etc/supervisord.conf
 COPY entrypoint.sh /usr/bin/entrypoint.sh
 USER 1000
 
-RUN sudo mkdir -p /etc/xdg/lxsession/LXDE && echo "@/home/pi/bluesim/BlueSim.x86_64 --pool" | sudo tee -a /etc/xdg/lxsession/LXDE/autostart
+RUN sudo mkdir -p /etc/xdg/lxsession/LXDE && echo "@/home/pi/bluesim/BlueSim.x86_64 --pool --no-sitl" | sudo tee -a /etc/xdg/lxsession/LXDE/autostart
 
 # add cockpit
 RUN sudo wget https://github.com/TheWaWaR/simple-http-server/releases/download/v0.6.6/x86_64-unknown-linux-musl-simple-http-server \
