@@ -352,7 +352,7 @@ class AutoPilotManager(metaclass=Singleton):
     def load_sitl_frame(self) -> SITLFrame:
         if self.configuration.get("sitl_frame", SITLFrame.UNDEFINED) != SITLFrame.UNDEFINED:
             return SITLFrame(self.configuration["sitl_frame"])
-        frame = SITLFrame.VECTORED
+        frame = SITLFrame.JSON
         logger.warning(f"SITL frame is undefined. Setting {frame} as current frame.")
         self.set_sitl_frame(frame)
         return frame
