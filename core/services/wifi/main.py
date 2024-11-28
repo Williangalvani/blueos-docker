@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional
 
 from commonwealth.utils.apis import (
     GenericErrorHandlingRoute,
@@ -41,7 +41,7 @@ init_logger(SERVICE_NAME)
 logger.info("Starting Wifi Manager.")
 wpa_manager = WifiManager()
 network_manager = NetworkManagerWifi()
-wifi_manager: AbstractWifiManager = wpa_manager
+wifi_manager: Optional[AbstractWifiManager] = None
 
 
 app = FastAPI(
@@ -55,6 +55,7 @@ app.router.route_class = GenericErrorHandlingRoute
 @app.get("/status", summary="Retrieve status of wifi manager.")
 @version(1, 0)
 async def network_status() -> Any:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.status()")
     wifi_status = await wifi_manager.status()
     for line in tabulate(list(wifi_status.items())).splitlines():
@@ -65,6 +66,7 @@ async def network_status() -> Any:
 @app.get("/scan", response_model=List[ScannedWifiNetwork], summary="Retrieve available wifi networks.")
 @version(1, 0)
 async def scan() -> Any:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.get_wifi_available()")
     try:
         available_networks = await wifi_manager.get_wifi_available()
@@ -76,6 +78,7 @@ async def scan() -> Any:
 @app.get("/saved", response_model=List[SavedWifiNetwork], summary="Retrieve saved wifi networks.")
 @version(1, 0)
 async def saved() -> Any:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.get_saved_wifi_network()")
     saved_networks = await wifi_manager.get_saved_wifi_network()
     return saved_networks
@@ -84,6 +87,7 @@ async def saved() -> Any:
 @app.post("/connect", summary="Connect to wifi network.")
 @version(1, 0)
 async def connect(credentials: WifiCredentials, hidden: bool = False) -> Any:
+    assert wifi_manager is not None
     logger.info(f"Calling wifi_manager.try_connect_to_network(credentials={credentials}, hidden={hidden})")
     await wifi_manager.try_connect_to_network(credentials, hidden)
 
@@ -91,6 +95,7 @@ async def connect(credentials: WifiCredentials, hidden: bool = False) -> Any:
 @app.post("/remove", summary="Remove saved wifi network.")
 @version(1, 0)
 async def remove(ssid: str) -> Any:
+    assert wifi_manager is not None
     logger.info(f"Processing remove request for SSID: {ssid}")
     try:
         logger.info("Calling wifi_manager.get_saved_wifi_network()")
@@ -104,6 +109,7 @@ async def remove(ssid: str) -> Any:
 @app.get("/disconnect", summary="Disconnect from wifi network.")
 @version(1, 0)
 async def disconnect() -> Any:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.disconnect()")
     await wifi_manager.disconnect()
     logger.info("Successfully disconnected from network.")
@@ -112,6 +118,7 @@ async def disconnect() -> Any:
 @app.get("/hotspot", summary="Get hotspot state.")
 @version(1, 0)
 def hotspot_state() -> Any:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.hotspot_is_running()")
     return wifi_manager.hotspot_is_running()
 
@@ -119,6 +126,7 @@ def hotspot_state() -> Any:
 @app.get("/hotspot_extended_status", summary="Get extended hotspot status.")
 @version(1, 0)
 async def hotspot_extended_state() -> HotspotStatus:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.supports_hotspot() and wifi_manager.hotspot_is_running()")
     return HotspotStatus(
         supported=await wifi_manager.supports_hotspot(), enabled=await wifi_manager.hotspot_is_running()
@@ -128,6 +136,7 @@ async def hotspot_extended_state() -> HotspotStatus:
 @app.post("/hotspot", summary="Enable/disable hotspot.")
 @version(1, 0)
 async def toggle_hotspot(enable: bool) -> Any:
+    assert wifi_manager is not None
     if enable:
         logger.info("Calling wifi_manager.enable_hotspot()")
         return await wifi_manager.enable_hotspot()
@@ -138,6 +147,7 @@ async def toggle_hotspot(enable: bool) -> Any:
 @app.post("/smart_hotspot", summary="Enable/disable smart-hotspot.")
 @version(1, 0)
 def toggle_smart_hotspot(enable: bool) -> Any:
+    assert wifi_manager is not None
     if enable:
         logger.info("Calling wifi_manager.enable_smart_hotspot()")
         wifi_manager.enable_smart_hotspot()
@@ -149,6 +159,7 @@ def toggle_smart_hotspot(enable: bool) -> Any:
 @app.get("/smart_hotspot", summary="Check if smart-hotspot is enabled.")
 @version(1, 0)
 def check_smart_hotspot() -> Any:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.is_smart_hotspot_enabled()")
     return wifi_manager.is_smart_hotspot_enabled()
 
@@ -156,6 +167,7 @@ def check_smart_hotspot() -> Any:
 @app.post("/hotspot_credentials", summary="Update hotspot credentials.")
 @version(1, 0)
 async def set_hotspot_credentials(credentials: WifiCredentials) -> Any:
+    assert wifi_manager is not None
     logger.info(f"Calling wifi_manager.set_hotspot_credentials(credentials={credentials})")
     await wifi_manager.set_hotspot_credentials(credentials)
 
@@ -163,6 +175,7 @@ async def set_hotspot_credentials(credentials: WifiCredentials) -> Any:
 @app.get("/hotspot_credentials", summary="Get hotspot credentials.")
 @version(1, 0)
 def get_hotspot_credentials() -> Any:
+    assert wifi_manager is not None
     logger.info("Calling wifi_manager.hotspot_credentials()")
     return wifi_manager.hotspot_credentials()
 
@@ -178,19 +191,21 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Abstraction CLI for WifiManager configuration.")
     candidates = [wpa_manager, network_manager]
-
+    logger.info("1")
     for implementation in candidates:
         implementation.add_arguments(parser)
+    logger.info("2")
     # we need to configure all arguments before parsing them, hence two loops
     for implementation in candidates:
         implementation.configure(parser.parse_args())
-
+    logger.info("3")
     loop = asyncio.new_event_loop()
-
+    logger.info("4")
     # Running uvicorn with log disabled so loguru can handle it
     config = Config(app=app, loop=loop, host="0.0.0.0", port=9000, log_config=None)
     server = Server(config)
     for implementation in candidates:
+        logger.info(f"{implementation} can work: {implementation.can_work()}")
         if implementation.can_work():
             logger.info(f"Using {implementation} as wifi manager.")
             implementation.start(loop)

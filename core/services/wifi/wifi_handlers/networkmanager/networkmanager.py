@@ -55,13 +55,15 @@ class NetworkManagerWifi(AbstractWifiManager):
         self._create_ap_process: Optional[subprocess.Popen[str]] = None
         self._ap_interface = "uap0"
         self._tasks: List[asyncio.Task[Any]] = []
+        self._nm = NetworkManager(self._bus)
+        self._nm_settings = NetworkManagerSettings(self._bus)
         logger.info("NetworkManagerWifi initialized")
 
     async def _create_virtual_interface(self) -> bool:
         """Create virtual AP interface using iw"""
         try:
             # Check if interface already exists
-            existing = subprocess.run(["ip", "link", "show", self._ap_interface], capture_output=True, check=True)
+            existing = subprocess.run(["ip", "link", "show", self._ap_interface], capture_output=True, check=False)
             if existing.returncode == 0:
                 logger.info(f"Interface {self._ap_interface} already exists")
                 return True
@@ -104,10 +106,8 @@ class NetworkManagerWifi(AbstractWifiManager):
             logger.error(f"Failed to remove virtual interface: {e}")
 
     async def async_start(self) -> None:
-        self._nm = NetworkManager(self._bus)
-        self._nm_settings = NetworkManagerSettings(self._bus)
-
         # Find WiFi device
+        assert self._nm is not None
         devices = await self._nm.get_devices()
         for device_path in devices:
             device = NetworkDeviceWireless(device_path, self._bus)
@@ -451,7 +451,7 @@ class NetworkManagerWifi(AbstractWifiManager):
 
                     ssid = profile.wireless.ssid.decode("utf-8")
                     saved_networks.append(
-                        SavedWifiNetwork(networkid=ssid, ssid=ssid, bssid=profile.wireless.bssid, nm_id=conn_path)
+                        SavedWifiNetwork(networkid=0, ssid=ssid, bssid=profile.wireless.bssid, nm_id=conn_path)
                     )
                 except Exception as e:
                     logger.error(f"Error processing connection {conn_path}: {e}")

@@ -15,7 +15,6 @@ class ScannedWifiNetwork(BaseModel):
     flags: str
     frequency: int
     signallevel: int
-    channel_requires_radar: bool
 
 
 class SavedWifiNetwork(BaseModel):
