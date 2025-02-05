@@ -461,6 +461,11 @@ class EthernetManager:
                 sorted by priority to set, if values are undefined.
         """
         self.network_handler.set_interfaces_priority(interfaces)
+        # save to settings
+        for interface in interfaces:
+            saved_interface = self.get_saved_interface_by_name(interface.name)
+            saved_interface.priority = interface.priority
+            self._update_interface_settings(interface.name, saved_interface)
 
     def get_interface_priority(self, interface_name: str) -> Optional[NetworkInterfaceMetric]:
         """Get the priority metric for a network interface.
