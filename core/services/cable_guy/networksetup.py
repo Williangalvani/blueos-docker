@@ -49,6 +49,73 @@ class AbstractNetworkHandler:
     def cleanup_interface_connections(self, interface_name: str) -> None:
         pass
 
+    def set_interfaces_priority_using_ipr(self, interfaces: List[NetworkInterfaceMetricApi]) -> None:
+        if not interfaces:
+            logger.info("No interfaces to set priority for")
+            return
+
+        for interface in interfaces:
+            try:
+                # Use specified priority or increment current_priority
+                priority = interface.priority
+
+                # Get interface index
+                interface_index = self.ipr.link_lookup(ifname=interface.name)[0]
+
+                # Get all routes for this interface
+                routes = self.ipr.get_routes(oif=interface_index, family=socket.AF_INET)
+
+                # Update existing routes
+                for route in routes:
+                    try:
+                        # Skip non-default routes (those not pointing to 0.0.0.0/0)
+                        dst = route.get_attr("RTA_DST")
+                        if dst is not None:  # If dst is None, it's a default route (0.0.0.0/0)
+                            continue
+
+                        # First delete the existing route
+                        self.ipr.route(
+                            "del",
+                            oif=interface_index,
+                            family=socket.AF_INET,
+                            scope=route["scope"],
+                            proto=route["proto"],
+                            type=route["type"],
+                            dst=route.get_attr("RTA_DST") if route.get_attr("RTA_DST") else "0.0.0.0/0",
+                            gateway=route.get_attr("RTA_GATEWAY"),
+                            table=route.get_attr("RTA_TABLE", 254),  # Default to main table if not specified
+                        )
+
+                        # Prepare data for the new route
+                        route_data = {"priority": priority}
+
+                        # Copy existing route attributes
+                        for attr in ["RTA_DST", "RTA_GATEWAY", "RTA_TABLE", "RTA_PREFSRC"]:
+                            value = route.get_attr(attr)
+                            if value:
+                                # Convert attribute name to lowercase and remove RTA_ prefix
+                                key = attr.lower().replace("rta_", "")
+                                route_data[key] = value
+
+                        # Add the new route with updated priority
+                        self.ipr.route(
+                            "add",
+                            oif=interface_index,
+                            family=socket.AF_INET,
+                            scope=route["scope"],
+                            proto=route["proto"],
+                            type=route["type"],
+                            **route_data,
+                        )
+                        logger.info(f"Updated default route for {interface.name} with priority {priority}")
+                    except Exception as e:
+                        logger.error(f"Failed to update route for {interface.name}: {e}")
+                        continue
+
+            except Exception as e:
+                logger.error(f"Failed to set priority for interface {interface.name}: {e}")
+                continue
+
 
 class BookwormHandler(AbstractNetworkHandler):
     """
@@ -151,58 +218,7 @@ class BookwormHandler(AbstractNetworkHandler):
             interfaces (List[NetworkInterfaceMetricApi]): A list of interfaces and their priority metrics,
                 sorted by priority to set.
         """
-        if not interfaces:
-            logger.info("No interfaces to set priority for")
-            return
-
-        # If there's only one interface and no priority specified, set it to highest priority (0)
-        if len(interfaces) == 1 and interfaces[0].priority is None:
-            interfaces[0].priority = 0
-
-        current_priority = 1000
-        for interface in interfaces:
-            try:
-                # Use specified priority or increment current_priority
-                priority = interface.priority if interface.priority is not None else current_priority
-
-                # Get interface index
-                interface_index = self.ipr.link_lookup(ifname=interface.name)[0]
-
-                # Get all routes for this interface
-                routes = self.ipr.get_routes(oif=interface_index, family=socket.AF_INET)
-
-                # Update existing routes
-                for route in routes:
-                    try:
-                        route_data = {"priority": priority}
-
-                        # Copy existing route attributes
-                        for attr in ["RTA_DST", "RTA_GATEWAY", "RTA_TABLE", "RTA_PREFSRC"]:
-                            value = route.get_attr(attr)
-                            if value:
-                                # Convert attribute name to lowercase and remove RTA_ prefix
-                                key = attr.lower().replace("rta_", "")
-                                route_data[key] = value
-
-                        # Update the route
-                        self.ipr.route(
-                            "replace",
-                            oif=interface_index,
-                            family=socket.AF_INET,
-                            scope=route["scope"],
-                            proto=route["proto"],
-                            type=route["type"],
-                            **route_data,
-                        )
-                        logger.info(f"Updated route for {interface.name} with priority {priority}")
-                    except Exception as e:
-                        logger.error(f"Failed to update route for {interface.name}: {e}")
-                        continue
-
-                current_priority += 1000
-            except Exception as e:
-                logger.error(f"Failed to set priority for interface {interface.name}: {e}")
-                continue
+        self.set_interfaces_priority_using_ipr(interfaces)
 
     def _get_dhcp_address_using_dhclient(self, interface_name: str) -> str | None:
         """Run dhclient to get a new IP address and return it.
