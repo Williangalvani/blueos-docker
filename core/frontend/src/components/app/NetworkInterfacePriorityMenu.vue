@@ -140,16 +140,20 @@ export default Vue.extend({
       await Promise.all(interfaces.map((iface) => this.checkInterfaceInternet(host, iface)))
     },
     async setHighestInterface(): Promise<void> {
-      this.is_loading = true
-      const interface_priority = this.interfaces.map((inter) => ({ name: inter.name }))
+      const interface_priorities = this.interfaces.map((inter) => ({ name: inter.name, priority: 0 }))
+      interface_priorities.forEach((inter, index) => {
+        inter.priority = index * 1000
+      })
+      this.interfaces = []
       await back_axios({
         method: 'post',
         url: `${ethernet.API_URL}/set_interfaces_priority`,
         timeout: 10000,
-        data: interface_priority,
+        data: interface_priorities,
       })
         .catch((error) => {
-          const message = `Could not increase the priority for interface '${interface_priority}', ${error}.`
+          const message = `Could not set network interface priorities: ${interface_priorities}, error: ${error}`
+          console.log(interface_priorities)
           notifier.pushError('INCREASE_NETWORK_INTERFACE_METRIC_FAIL', message)
         })
         .then(() => {
@@ -161,7 +165,6 @@ export default Vue.extend({
           this.close()
         })
       await this.fetchAvailableInterfaces()
-      this.is_loading = false
     },
     async fetchAvailableInterfaces(): Promise<void> {
       await back_axios({
