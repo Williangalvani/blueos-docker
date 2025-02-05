@@ -61,6 +61,9 @@ class BookwormHandler(AbstractNetworkHandler):
         network_manager_settings = NetworkManagerSettings()
         for connection_path in network_manager_settings.connections:
             profile = NetworkConnectionSettings(connection_path).get_profile()
+            # Skip if this is a wireless connection
+            if profile.connection.type == "802-11-wireless":
+                continue
             if profile.connection.interface_name == interface_name:
                 logger.info(
                     f"Removing connection {profile.connection.uuid} ({profile.connection.connection_id}) for interface {interface_name}"
