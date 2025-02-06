@@ -642,12 +642,6 @@ class EthernetManager:
         if there is a mismatch, it will apply the saved settings
         """
         while True:
-            if self.priorities_mismatch():
-                logger.warning("Interface priorities mismatch, applying saved settings.")
-                try:
-                    self.set_interfaces_priority(self.settings.root["priorities"])
-                except Exception as error:
-                    logger.error(f"Failed to set interface priorities: {error}")
             mismatches = self.config_mismatch()
             if mismatches:
                 logger.warning("Interface config mismatch, applying saved settings.")
@@ -657,6 +651,10 @@ class EthernetManager:
             priority_mismatch = self.priorities_mismatch()
             if priority_mismatch:
                 logger.warning("Interface priorities mismatch, applying saved settings.")
-                for interface in priority_mismatch:
-                    self.set_configuration(interface, watchdog_call=True)
+                saved_interfaces = self.settings.root["content"]
+                priorities = [
+                    NetworkInterfaceMetricApi(name=interface["name"], priority=interface["priority"])
+                    for interface in saved_interfaces
+                ]
+                self.set_interfaces_priority(priorities)
             await asyncio.sleep(5)
