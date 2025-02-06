@@ -367,7 +367,8 @@ class EthernetManager:
                 valid_addresses.append(InterfaceAddress(ip=ip, mode=mode))
 
             info = self.get_interface_info(interface)
-            interface_data = NetworkInterface(name=interface, addresses=valid_addresses, info=info)
+            priority = self.get_saved_interface_by_name(interface).priority
+            interface_data = NetworkInterface(name=interface, addresses=valid_addresses, info=info, priority=priority)
             # Check if it's valid and add to the result
             if self.validate_interface_data(interface_data, filter_wifi):
                 result += [interface_data]

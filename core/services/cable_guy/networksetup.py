@@ -74,6 +74,8 @@ class AbstractNetworkHandler:
                             continue
 
                         # First delete the existing route
+                        logger.info(f"Deleting route for {interface.name}")
+                        logger.info(f"route: {route}")
                         self.ipr.route(
                             "del",
                             oif=interface_index,
@@ -81,23 +83,14 @@ class AbstractNetworkHandler:
                             scope=route["scope"],
                             proto=route["proto"],
                             type=route["type"],
-                            dst=route.get_attr("RTA_DST") if route.get_attr("RTA_DST") else "0.0.0.0/0",
+                            dst="0.0.0.0/0",  # For default route
                             gateway=route.get_attr("RTA_GATEWAY"),
                             table=route.get_attr("RTA_TABLE", 254),  # Default to main table if not specified
                         )
-
-                        # Prepare data for the new route
-                        route_data = {"priority": priority}
-
-                        # Copy existing route attributes
-                        for attr in ["RTA_DST", "RTA_GATEWAY", "RTA_TABLE", "RTA_PREFSRC"]:
-                            value = route.get_attr(attr)
-                            if value:
-                                # Convert attribute name to lowercase and remove RTA_ prefix
-                                key = attr.lower().replace("rta_", "")
-                                route_data[key] = value
+                        logger.info(f"Deleted route for {interface.name}")
 
                         # Add the new route with updated priority
+                        logger.info(f"Adding new route for {interface.name} with priority {priority}")
                         self.ipr.route(
                             "add",
                             oif=interface_index,
@@ -105,7 +98,10 @@ class AbstractNetworkHandler:
                             scope=route["scope"],
                             proto=route["proto"],
                             type=route["type"],
-                            **route_data,
+                            dst="0.0.0.0/0",  # For default route
+                            gateway=route.get_attr("RTA_GATEWAY"),
+                            priority=priority,
+                            table=route.get_attr("RTA_TABLE", 254),  # Default to main table if not specified
                         )
                         logger.info(f"Updated default route for {interface.name} with priority {priority}")
                     except Exception as e:
