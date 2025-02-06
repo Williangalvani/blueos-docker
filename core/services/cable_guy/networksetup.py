@@ -179,33 +179,7 @@ class BookwormHandler(AbstractNetworkHandler):
         Returns:
             List[NetworkInterfaceMetric]: A list of priority metrics for each interface.
         """
-        interfaces = self.ipr.get_links()
-        # Get all IPv4 routes
-        routes = self.ipr.get_routes(family=socket.AF_INET)
-
-        # Create a mapping of interface index to name
-        name_dict = {iface["index"]: iface.get_attr("IFLA_IFNAME") for iface in interfaces}
-
-        # Get metrics for each interface from routes
-        metric_index_list = [
-            {"metric": route.get_attr("RTA_PRIORITY", 0), "index": route.get_attr("RTA_OIF")} for route in routes
-        ]
-
-        # Keep the highest metric per interface
-        metric_dict: Dict[int, int] = {}
-        for d in metric_index_list:
-            if d["index"] in metric_dict:
-                metric_dict[d["index"]] = max(metric_dict[d["index"]], d["metric"])
-            else:
-                metric_dict[d["index"]] = d["metric"]
-
-        # Create NetworkInterfaceMetric objects for each interface
-        result = []
-        for index, name in name_dict.items():
-            metric = NetworkInterfaceMetric(index=index, name=name, priority=metric_dict.get(index, 0))
-            result.append(metric)
-
-        return result
+        return []
 
     # pylint: disable=too-many-nested-blocks
     def set_interfaces_priority(self, interfaces: List[NetworkInterfaceMetricApi]) -> None:

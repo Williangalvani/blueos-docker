@@ -406,10 +406,10 @@ class EthernetManager:
         return self._get_interfaces_priority_from_ipr()
 
     def _get_interfaces_priority_from_ipr(self) -> List[NetworkInterfaceMetric]:
-        """Get the priority metrics for all network interfaces.
+        """Get the priority metrics for all network interfaces that are UP and RUNNING.
 
         Returns:
-            List[NetworkInterfaceMetric]: A list of priority metrics for each interface.
+            List[NetworkInterfaceMetric]: A list of priority metrics for each active interface.
         """
 
         interfaces = self.ipr.get_links()
@@ -419,36 +419,36 @@ class EthernetManager:
         # GLHF
         routes = self.ipr.get_routes(family=AddressFamily.AF_INET)
 
-        # Generate a dict of index to network name.
-        # And a second list between the network index and metric,
-        # keep in mind that a single interface can have multiple routes
-        name_dict = {iface["index"]: iface.get_attr("IFLA_IFNAME") for iface in interfaces}
-        metric_index_list = [
-            {"metric": route.get_attr("RTA_PRIORITY", 0), "index": route.get_attr("RTA_OIF")} for route in routes
-        ]
+        # First find interfaces with default routes
+        interfaces_with_default_routes = set()
+        for route in routes:
+            dst = route.get_attr("RTA_DST")
+            oif = route.get_attr("RTA_OIF")
+            if dst is None and oif is not None:  # Default route
+                interfaces_with_default_routes.add(oif)
 
-        # Keep the highest metric per interface in a dict of index to metric
-        metric_dict: Dict[int, int] = {}
-        for d in metric_index_list:
-            if d["index"] in metric_dict:
-                metric_dict[d["index"]] = max(metric_dict[d["index"]], d["metric"])
-            else:
-                metric_dict[d["index"]] = d["metric"]
+        # Generate a dict of index to network name, but only for interfaces that are UP and RUNNING
+        # IFF_UP flag is 0x1, IFF_RUNNING is 0x40 in Linux
+        name_dict = {
+            iface["index"]: iface.get_attr("IFLA_IFNAME")
+            for iface in interfaces
+            if (iface["flags"] & 0x1) and (iface["flags"] & 0x40) and iface["index"] in interfaces_with_default_routes
+        }
 
-        # Highest priority wins for ipr but not for dhcpcd, so we sort and reverse the list
-        # Where we change the priorities between highest and low to convert that
-        original_list = sorted(
-            [
-                NetworkInterfaceMetric(index=index, name=name, priority=metric_dict.get(index) or 0)
-                for index, name in name_dict.items()
-            ],
-            key=lambda x: x.priority,
-            reverse=True,
-        )
+        # Get metrics for default routes of active interfaces
+        interface_metrics = {}
+        for route in routes:
+            oif = route.get_attr("RTA_OIF")
+            if oif in name_dict and route.get_attr("RTA_DST") is None:  # Only default routes
+                metric = route.get_attr("RTA_PRIORITY", 0)
+                # Keep the highest metric for each interface
+                if oif not in interface_metrics or metric > interface_metrics[oif]:
+                    interface_metrics[oif] = metric
 
+        # Create the list of interface metrics
         return [
-            NetworkInterfaceMetric(index=item.index, name=item.name, priority=original_list[-(i + 1)].priority)
-            for i, item in enumerate(original_list)
+            NetworkInterfaceMetric(index=index, name=name, priority=interface_metrics.get(index, 0))
+            for index, name in name_dict.items()
         ]
 
     def set_interfaces_priority(self, interfaces: List[NetworkInterfaceMetricApi]) -> None:
@@ -590,7 +590,7 @@ class EthernetManager:
 
         for interface_settings in self.settings.root["content"]:
             interface = NetworkInterface(**interface_settings)
-            if interface.priority != current_priorities[interface.name]:
+            if interface.name in current_priorities and interface.priority != current_priorities[interface.name]:
                 logger.info(
                     f"Priority mismatch for {interface.name}: {interface.priority} != {current_priorities[interface.name]}"
                 )
