@@ -66,6 +66,7 @@ class AbstractNetworkHandler:
                 routes = self.ipr.get_routes(oif=interface_index, family=socket.AF_INET)
 
                 # Update existing routes
+
                 for route in routes:
                     try:
                         # Skip non-default routes (those not pointing to 0.0.0.0/0)
@@ -90,21 +91,28 @@ class AbstractNetworkHandler:
                         )
                         logger.info(f"Deleted route for {interface.name}")
 
-                        # Add the new route with updated priority
-                        logger.info(f"Adding new route for {interface.name} with priority {priority}")
-                        self.ipr.route(
-                            "add",
-                            oif=interface_index,
-                            family=socket.AF_INET,
-                            scope=route["scope"],
-                            proto=route["proto"],
-                            type=route["type"],
-                            dst="0.0.0.0/0",  # For default route
-                            gateway=route.get_attr("RTA_GATEWAY"),
-                            priority=priority,
-                            table=route.get_attr("RTA_TABLE", 254),  # Default to main table if not specified
-                        )
-                        logger.info(f"Updated default route for {interface.name} with priority {priority}")
+                        for attempt in range(3):
+                            # we try with different priorities to work around conflicts
+                            try:
+                                # Add the new route with updated priority
+                                logger.info(f"Adding new route for {interface.name} with priority {priority}")
+                                self.ipr.route(
+                                    "add",
+                                    oif=interface_index,
+                                    family=socket.AF_INET,
+                                    scope=route["scope"],
+                                    proto=route["proto"],
+                                    type=route["type"],
+                                    dst="0.0.0.0/0",  # For default route
+                                    gateway=route.get_attr("RTA_GATEWAY"),
+                                    priority=priority + attempt,
+                                    table=route.get_attr("RTA_TABLE", 254),  # Default to main table if not specified
+                                )
+                                logger.info(f"Updated default route for {interface.name} with priority {priority}")
+                                break
+                            except Exception as e:
+                                logger.error(f"Failed to update route for {interface.name}: {e} (attempt {attempt})")
+                                continue
                     except Exception as e:
                         logger.error(f"Failed to update route for {interface.name}: {e}")
                         continue
