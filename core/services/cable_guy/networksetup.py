@@ -125,7 +125,7 @@ class BookwormHandler(AbstractNetworkHandler):
         for connection_path in network_manager_settings.connections:
             profile = NetworkConnectionSettings(connection_path).get_profile()
             # Skip if this is a wireless connection
-            if profile.connection.type == "802-11-wireless":
+            if profile.connection.connection_type == "802-11-wireless":
                 continue
             if profile.connection.interface_name == interface_name:
                 logger.info(
