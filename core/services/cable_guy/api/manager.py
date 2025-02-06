@@ -3,7 +3,7 @@ import re
 import subprocess
 import time
 from socket import AddressFamily
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 import psutil
 from commonwealth.utils.decorators import temporary_cache
