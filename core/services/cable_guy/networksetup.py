@@ -72,7 +72,8 @@ class AbstractNetworkHandler:
                         dst = route.get_attr("RTA_DST")
                         if dst is not None:  # If dst is None, it's a default route (0.0.0.0/0)
                             continue
-
+                        if route.get_attr("RTA_PRIORITY") == priority:
+                            continue
                         # First delete the existing route
                         logger.info(f"Deleting route for {interface.name}")
                         logger.info(f"route: {route}")
