@@ -24,7 +24,9 @@ printenv | grep '^TZ' >> /tmp/env.txt
 
 echo 'PASSWD=mypasswd' >> /tmp/env.txt
 
-# setup query params for cockpit
-sudo jq '. + {"extra_query": "mainConnectionURI=ws://'"$PUBLIC_IPADDR"':'"$VAST_TCP_PORT_80"'/mavlink2rest/ws/mavlink&webRTCSignallingURI='"ws://$PUBLIC_IPADDR"':'"$BLUEOS_SIGNALING_SERVER_PORT"'"}&webRTCConfiguration={%20%22bundlePolicy%22:%20%22max-bundle%22,%20%22iceServers%22:%20[%20{%20%22urls%22:%20%22stun:stun.l.google.com:19302%22%20}%20]%20}' /cockpit/register_service > temp.json && sudo mv temp.json /cockpit/register_service
+# setup query params for cockpit - reformatted for better readability and safety
+sudo jq '. + {
+  "extra_query": "mainConnectionURI=ws://'"$PUBLIC_IPADDR"':'"$VAST_TCP_PORT_80"'/mavlink2rest/ws/mavlink&webRTCSignallingURI=ws://'"$PUBLIC_IPADDR"':'"$BLUEOS_SIGNALING_SERVER_PORT"'&webRTCConfiguration={\"bundlePolicy\":\"max-bundle\",\"iceServers\":[{\"urls\":\"stun:stun.l.google.com:19302\"}]}"
+}' /cockpit/register_service > temp.json && sudo mv temp.json /cockpit/register_service
 sudo bash -c "set -a && source /tmp/env.txt && set +a && /usr/bin/start-blueos-core"
 /usr/bin/supervisord
