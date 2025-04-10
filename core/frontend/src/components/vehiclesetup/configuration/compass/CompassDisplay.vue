@@ -109,9 +109,9 @@ export default Vue.extend({
     gps_yaws(): (number | null)[] {
       const yaws = []
       const msg = mavlink_store_get(mavlink, 'GPS_RAW_INT.messageData.message') as Dictionary<number>
-      yaws.push(msg?.yaw && msg.yaw !== 65535 ? msg.yaw / 100 : null)
+      yaws.push(this.isValidGpsYaw(msg?.yaw) ? msg.yaw / 100 : null)
       const msg2 = mavlink_store_get(mavlink, 'GPS2_RAW.messageData.message') as Dictionary<number>
-      yaws.push(msg2?.yaw && msg2.yaw !== 65535 ? msg2.yaw / 100 : null)
+      yaws.push(this.isValidGpsYaw(msg2?.yaw) ? msg2.yaw / 100 : null)
       return yaws
     },
     headings(): (number | null)[] {
@@ -136,6 +136,10 @@ export default Vue.extend({
     }
   },
   methods: {
+    isValidGpsYaw(yaw: number | undefined): boolean {
+      // both zero and 65535 are invalid. North is represented by 3600
+      return yaw !== undefined && yaw !== 65535 && yaw !== 0
+    },
     resetCanvas(ctx: CanvasRenderingContext2D) {
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
@@ -198,18 +202,32 @@ export default Vue.extend({
         0,
         verticalOffset + this.compasses.slice(0, 3).length * 20 - this.renderVariables.yawAngleDegrees.length * 10,
       )
-      ctx.fillStyle = this.colors.GPS1
-      ctx.fillText(
-        'GPS1',
-        0,
-        verticalOffset + this.compasses.slice(0, 3).length * 20 - this.renderVariables.yawAngleDegrees.length * 10 + 20,
-      )
-      ctx.fillStyle = this.colors.GPS2
-      ctx.fillText(
-        'GPS2',
-        0,
-        verticalOffset + this.compasses.slice(0, 3).length * 20 - this.renderVariables.yawAngleDegrees.length * 10 + 40,
-      )
+
+      // Only show GPS labels if their yaw values are valid
+      const gps1Msg = mavlink_store_get(mavlink, 'GPS_RAW_INT.messageData.message') as Dictionary<number>
+      const gps2Msg = mavlink_store_get(mavlink, 'GPS2_RAW.messageData.message') as Dictionary<number>
+
+      let gpsLabelOffset = 0
+      if (this.isValidGpsYaw(gps1Msg?.yaw)) {
+        ctx.fillStyle = this.colors.GPS1
+        ctx.fillText(
+          'GPS1',
+          0,
+          verticalOffset + this.compasses.slice(0, 3).length * 20
+          - this.renderVariables.yawAngleDegrees.length * 10 + 20,
+        )
+        gpsLabelOffset += 20
+      }
+
+      if (this.isValidGpsYaw(gps2Msg?.yaw)) {
+        ctx.fillStyle = this.colors.GPS2
+        ctx.fillText(
+          'GPS2',
+          0,
+          verticalOffset + this.compasses.slice(0, 3).length * 20
+          - this.renderVariables.yawAngleDegrees.length * 10 + 20 + gpsLabelOffset,
+        )
+      }
       ctx.restore()
 
       ctx.rotate(glMatrix.toRadian(-90))
