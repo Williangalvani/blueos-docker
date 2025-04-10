@@ -109,9 +109,9 @@ export default Vue.extend({
     gps_yaws(): (number | null)[] {
       const yaws = []
       const msg = mavlink_store_get(mavlink, 'GPS_RAW_INT.messageData.message') as Dictionary<number>
-      yaws.push(msg?.yaw ? msg.yaw / 100 : null)
+      yaws.push(msg?.yaw && msg.yaw !== 65535 ? msg.yaw / 100 : null)
       const msg2 = mavlink_store_get(mavlink, 'GPS2_RAW.messageData.message') as Dictionary<number>
-      yaws.push(msg2?.yaw ? msg2.yaw / 100 : null)
+      yaws.push(msg2?.yaw && msg2.yaw !== 65535 ? msg2.yaw / 100 : null)
       return yaws
     },
     headings(): (number | null)[] {

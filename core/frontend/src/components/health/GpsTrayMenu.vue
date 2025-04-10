@@ -184,7 +184,7 @@ export default Vue.extend({
           },
         )
       }
-      if (this.gps_raw_int?.yaw !== 0) {
+      if (this.gps_raw_int?.yaw !== 0 && this.gps_raw_int?.yaw !== 65535) {
         values.push(
           {
             name: 'Yaw',
