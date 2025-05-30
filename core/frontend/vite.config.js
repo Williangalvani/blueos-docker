@@ -58,7 +58,16 @@ export default defineConfig(({ command, mode }) => {
         project: "blueos",
       })
     ],
-    assetsInclude: ['**/*.gif', '**/*.glb', '**/*.png', '**/*.svg', '**/assets/ArduPilot-Parameter-Repository**.json'],
+    assetsInclude: [
+      '**/*.gif',
+      '**/*.glb',
+      '**/*.png',
+      '**/*.svg',
+      '**/assets/ArduPilot-Parameter-Repository**.json',
+      '**/draco_decoder.js',
+      '**/draco_decoder.wasm',
+      '**/draco_wasm_wrapper.js'
+    ],
     resolve: {
       extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
       alias: {

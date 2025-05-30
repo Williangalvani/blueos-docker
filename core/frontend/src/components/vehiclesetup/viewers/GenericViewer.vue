@@ -308,6 +308,8 @@ export default Vue.extend({
   async mounted() {
     // eslint-disable-next-line no-extra-parens
     (this.$refs.modelviewer as ModelViewerElement)?.addEventListener('load', () => {
+      // eslint-disable-next-line no-extra-parens, @typescript-eslint/no-explicit-any
+      (this.$refs.modelviewer as any).dracoDecoderLocation = '/js/libs/draco/'
       this.redraw()
       if (this.transparent) {
         this.setAlphas(0.05)
