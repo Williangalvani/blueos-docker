@@ -6,6 +6,7 @@ set -e
 
 TOOLS=(
     ardupilot_tools
+    dump_journal
     filebrowser
     logviewer
     scripts

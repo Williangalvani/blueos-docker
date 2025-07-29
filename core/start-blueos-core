@@ -236,3 +236,6 @@ for TUPLE in "${SERVICES[@]}"; do
 done
 
 echo "BlueOS running!"
+
+
+dump_journal.py

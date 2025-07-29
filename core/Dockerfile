@@ -109,6 +109,7 @@ COPY run-service.sh /usr/bin/run-service
 # Copy binaries and necessary folders from download-binaries to this stage
 COPY --from=download-binaries \
     /usr/bin/blueos_startup_update.py \
+    /usr/bin/dump_journal.py \
     /usr/bin/bridges \
     /usr/bin/linux2rest \
     /usr/bin/machineid-cli \
