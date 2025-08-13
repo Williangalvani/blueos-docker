@@ -7,16 +7,11 @@ from typing import Any, Dict
 
 import appdirs
 import dpath
-from uvicorn import Config, Server
-from commonwealth.utils.apis import GenericErrorHandlingRoute
 from commonwealth.utils.logs import InterceptHandler, init_logger
 from commonwealth.utils.sentry_config import init_sentry_async
-from fastapi import Body, FastAPI, HTTPException
-from fastapi import Path as FastPath
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
-from pydantic import BaseModel
+from robyn import Robyn, Request, Response
+from robyn.responses import serve_html
 
 SERVICE_NAME = "bag-of-holding"
 FILE_PATH = Path(appdirs.user_config_dir(SERVICE_NAME, "db.json"))
@@ -24,20 +19,8 @@ FILE_PATH = Path(appdirs.user_config_dir(SERVICE_NAME, "db.json"))
 logging.basicConfig(handlers=[InterceptHandler()], level=0)
 init_logger(SERVICE_NAME)
 
-app = FastAPI(
-    title="Bag of Holding API",
-    description=(
-        "Bag of Holding implements a FastAPI service with versioning that provides a simple key-value"
-        "storage API, enabling the user to store and retrieve data as JSON objects through HTTP requests."
-    ),
-)
-app.router.route_class = GenericErrorHandlingRoute
+app = Robyn(__file__)
 logger.info(f"Starting Bag of Holding: {FILE_PATH}")
-
-
-class KeyValue(BaseModel):
-    key: str
-    value: Any
 
 
 def read_db() -> Any:
@@ -63,43 +46,62 @@ def write_db(data: Dict[str, Any]) -> None:
 
 
 @app.post("/overwrite")
-async def overwrite_data(payload: dict[str, Any] = Body(...)) -> JSONResponse:
+async def overwrite_data(request: Request) -> Response:
+    payload = request.json()
     logger.debug(f"Overwrite: {json.dumps(payload)}")
     write_db(payload)
-    return JSONResponse(content={"status": "success"})
+    return Response(status_code=200, headers={}, description=json.dumps({"status": "success"}))
 
 
-@app.post("/set/{path:path}")
-@version(1, 0)
-async def write_data(path: str = FastPath(..., regex=r"^.*$"), payload: Any = Body(...)) -> JSONResponse:
+async def write_data_handler(request: Request) -> Response:
+    path = request.path_params.get("path")
+    payload = request.json()
     logger.debug(f"Write path: {path}, {json.dumps(payload)}")
     current_data = read_db()
     dpath.new(current_data, path, payload)
     write_db(current_data)
-    return JSONResponse(content={"status": "success"})
+    return Response(status_code=200, headers={}, description=json.dumps({"status": "success"}))
 
 
-@app.get("/get/{path:path}")
-@version(1, 0)
-async def read_data(path: str) -> JSONResponse:
+async def read_data_handler(request: Request) -> Response:
+    path = request.path_params.get("path")
     logger.debug(f"Get path: {path}")
     current_data = read_db()
 
     if path == "*":
-        return JSONResponse(current_data)
+        return Response(status_code=200, headers={}, description=json.dumps(current_data))
 
     try:
         result = dpath.get(current_data, path)
-        return JSONResponse(result)
+        return Response(status_code=200, headers={}, description=json.dumps(result))
     except KeyError:
-        raise HTTPException(status_code=400, detail="Invalid path") from KeyError
+        return Response(status_code=400, headers={}, description=json.dumps({"detail": "Invalid path"}))
 
 
-app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
+# Register versioned routes
+@app.post("/v1.0/set/:path")
+async def write_data_v1(request: Request) -> Response:
+    return await write_data_handler(request)
+
+
+@app.get("/v1.0/get/:path")
+async def read_data_v1(request: Request) -> Response:
+    return await read_data_handler(request)
+
+
+# Register latest routes (equivalent to versioned)
+@app.post("/latest/set/:path")
+async def write_data_latest(request: Request) -> Response:
+    return await write_data_handler(request)
+
+
+@app.get("/latest/get/:path")
+async def read_data_latest(request: Request) -> Response:
+    return await read_data_handler(request)
 
 
 @app.get("/")
-async def root() -> HTMLResponse:
+async def root(request: Request) -> Response:
     html_content = """
     <html>
         <head>
@@ -107,17 +109,14 @@ async def root() -> HTMLResponse:
         </head>
     </html>
     """
-    return HTMLResponse(content=html_content, status_code=200)
+    return serve_html(html_content)
 
 
 async def main() -> None:
     await init_sentry_async(SERVICE_NAME)
-
-    # Running uvicorn with log disabled so loguru can handle it
-    config = Config(app=app, host="0.0.0.0", port=9101, log_config=None)
-    server = Server(config)
-
-    await server.serve()
+    
+    # Start the Robyn server
+    app.start(host="0.0.0.0", port=9101)
 
 
 if __name__ == "__main__":
