@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Any, List, Optional
 
+from contextlib import asynccontextmanager
 from commonwealth.utils.apis import (
     GenericErrorHandlingRoute,
     PrettyJSONResponse,
@@ -32,13 +33,14 @@ from wifi_handlers.AbstractWifiHandler import AbstractWifiManager
 from wifi_handlers.networkmanager.networkmanager import NetworkManagerWifi
 from wifi_handlers.wpa_supplicant.WifiManager import WifiManager
 
+
 FRONTEND_FOLDER = Path.joinpath(Path(__file__).parent.absolute(), "frontend")
 SERVICE_NAME = "wifi-manager"
 
 zenoh_config = ZenohSession(
     configuration={
         "mode": "client",
-        "connect/endpoints": ["tcp/192.168.100.40:7447"],
+        "connect/endpoints": ["tcp/127.0.0.1:7447"],
         "adminspace": {"enabled": True},
         "metadata": {"name": SERVICE_NAME},
     }
@@ -47,18 +49,26 @@ zenoh_config = ZenohSession(
 logging.basicConfig(handlers=[InterceptHandler()], level=0)
 init_logger(SERVICE_NAME)
 
-logger.info("Starting Wifi Manager.")
 wpa_manager = WifiManager()
 network_manager = NetworkManagerWifi()
 wifi_manager: Optional[AbstractWifiManager] = None
 
 
-app = FastAPI(
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("----------------------------Lifespan starting session.")
+    yield
+    zenoh_config.close()
+    print("----------------------------Lifespan closing session.")
+
+
+original_app = FastAPI(
     title="WiFi Manager API",
     description="WiFi Manager is responsible for managing WiFi connections on BlueOS.",
     default_response_class=PrettyJSONResponse,
+    lifespan=lifespan,
 )
-app = apply_route_decorator(app)
+app = apply_route_decorator(original_app)
 app.router.route_class = GenericErrorHandlingRoute
 
 
@@ -188,7 +198,7 @@ def get_hotspot_credentials() -> Any:
     return wifi_manager.hotspot_credentials()
 
 
-app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
+app = VersionedFastAPI(app, lifespan=lifespan, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
 app.mount("/", StaticFiles(directory=str(FRONTEND_FOLDER), html=True))
 
 
@@ -224,4 +234,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    print("----------------------------Main starting.")
     asyncio.run(main())

@@ -22,6 +22,10 @@ class ZenohSession:
             thread_name_prefix="zenoh-",
         )
 
+    def close(self):
+        self.session.close()
+        self._executor.shutdown()
+
     @classmethod
     def zenoh_queryable(cls):
         def decorator(func: Callable[[], Any]):
