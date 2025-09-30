@@ -3,6 +3,8 @@ import { SemVer } from 'semver'
 export interface Firmware {
     name: string
     url: URL
+    platform: string
+    board_id?: number
 }
 
 export enum Vehicle {
