@@ -1,9 +1,12 @@
 import asyncio
 from typing import List, Optional
 
+import serial
+
 from commonwealth.utils.general import is_running_as_root
 from serial.tools.list_ports_linux import SysFS, comports
 
+from flight_controller_detector.bootloader.px4_bootloader import PX4BootLoader
 from flight_controller_detector.board_identification import get_board_ids_from_usb_id, load_board_identifiers
 from flight_controller_detector.linux.detector import LinuxFlightControllerDetector
 from typedefs import FlightController, FlightControllerFlags, Platform, PlatformType
@@ -52,6 +55,13 @@ class Detector:
         return platforms
 
     @staticmethod
+    def ask_bootloader_for_board_id(port: SysFS) -> Optional[int]:
+        with serial.Serial(port.device, 115200, timeout=1) as ser:
+            bootloader = PX4BootLoader(ser)
+            board_info = bootloader.get_board_info()
+            return board_info.board_id
+
+    @staticmethod
     def detect_serial_flight_controllers() -> List[FlightController]:
         """Check if a standalone flight controller is connected via usb/serial.
 
@@ -77,10 +87,14 @@ class Detector:
                 if port.vid is not None and port.pid is not None:
                     board_ids = get_board_ids_from_usb_id(port.vid, port.pid, board_name)
                     if len(board_ids) > 1:
-                        logger.warning(f"Multiple board_ids found for {board_name}. using {board_ids[0]}")
-                        board_id = board_ids[0]
-                    elif len(board_ids) == 1:
-                        board_id = board_ids[0]
+                        logger.warning(f"Multiple board_ids found for {board_name}. let's ask the bootloader")
+                        if Detector.is_serial_bootloader(port):
+                            board_id = Detector.ask_bootloader_for_board_id(port)
+                    if board_id is None:
+                        logger.warning(f"No board_id found for {board_name}. returning ALL")
+                        raise ValueError(f"No board_id found for {board_name}")
+                    # TODO return all board_ids as fallback
+                    # board_id = board_ids
 
                 logger.info(f"creating FlightController: {platform} {board_name} {port.device} {board_id}")
                 board = FlightController(
