@@ -17,18 +17,21 @@ def is_port_in_use(device_path: str) -> bool:
         True if the port is in use by another process, False otherwise
     """
     try:
-        check_script = f"import serial; serial.Serial('{device_path}', 115200, timeout=0.1).close()"
+        # Try to open the device with exec as blueos user
+        # Exit code 2 means "Device or resource busy" (port is in use)
         result = subprocess.run(
-            ["su", "-", "blueos", "-c", f'python3 -c "{check_script}"'],
+            ["su", "-", "blueos", "-c", f"exec 3<> {device_path} 2>&1"],
             capture_output=True,
-            timeout=2,
-            check=True,
+            timeout=1,
+            shell=False,
+            check=False,
         )
-        if result.returncode != 0:
-            # If it's not a permission error, the port is in use
-            if b"Permission denied" not in result.stderr and b"PermissionError" not in result.stderr:
-                logger.debug(f"Port {device_path} is in use by another process")
-                return True
+
+        # Exit code 2 indicates the port is in use
+        if result.returncode == 2:
+            logger.debug(f"Port {device_path} is in use by another process")
+            return True
+
         return False
     except subprocess.TimeoutExpired:
         logger.warning(f"Timeout checking port {device_path}")
