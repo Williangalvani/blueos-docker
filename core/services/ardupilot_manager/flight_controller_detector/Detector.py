@@ -48,6 +48,7 @@ class Detector:
         Returns a list of platforms that the board could be.
         Tries to talk to the bootloader first, if that fails,
         it will use the USB VID:PID to identify the board.
+        If there's a match of usb product name, we further filter the list.
         """
         vid = port.vid
         pid = port.pid
@@ -57,7 +58,7 @@ class Detector:
             return []
 
         usb_id = f"{vid:04x}:{pid:04x}"
-        platforms = []
+        platforms: list[Platform] = []
 
         board_id = None
         if Detector.is_serial_bootloader(port):
@@ -67,10 +68,10 @@ class Detector:
                 board_id = 9  # px4_fmu-v3_default edge case
         identifiers = load_board_identifiers()
 
+        usb_name = port.product
         if usb_id in identifiers:
             for board_platform in identifiers[usb_id]:
                 if board_id is None or board_id == identifiers[usb_id][board_platform]:
-                    logger.info(f"detected board {board_platform} with id {identifiers[usb_id][board_platform]}")
                     platforms.append(
                         Platform(
                             name=board_platform,
@@ -78,7 +79,15 @@ class Detector:
                             board_id=identifiers[usb_id][board_platform],
                         )
                     )
-        return platforms
+
+            def partial_match(usb_name: str, board_platform: str) -> bool:
+
+                return usb_name.lower().startswith(board_platform.lower()) or board_platform.lower().startswith(
+                    usb_name.lower()
+                )
+
+        filtered_platforms = [platform for platform in platforms if partial_match(usb_name, platform.name)]
+        return filtered_platforms if filtered_platforms else platforms
 
     @staticmethod
     @temporary_cache(
