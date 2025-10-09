@@ -223,7 +223,7 @@
               :class="{'error-log': log.stream === 'stderr', 'info-log': log.stream === 'stdout'}"
               class="log-line"
             >
-              {{ log.data }}
+              {{ log.data }}<br>
             </div>
           </div>
         </v-card-text>

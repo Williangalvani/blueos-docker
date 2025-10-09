@@ -221,7 +221,7 @@ async def install_firmware_from_url(
                 stream, line = await output_queue.get()
                 if stream == "done":
                     break
-                yield json.dumps({"stream": stream, "data": line})
+                yield json.dumps({"stream": stream, "data": line}) + "\n"
         finally:
             # Ensure task is cleaned up
             if not task.done():
@@ -299,7 +299,7 @@ async def install_firmware_from_file(
                 stream, line = await output_queue.get()
                 if stream == "done":
                     break
-                yield json.dumps({"stream": stream, "data": line})
+                yield json.dumps({"stream": stream, "data": line}) + "\n"
         finally:
             # Ensure task is cleaned up
             if not task.done():
@@ -427,7 +427,7 @@ async def restore_default_firmware(board_name: Optional[str] = None) -> Any:
                 stream, line = await output_queue.get()
                 if stream == "done":
                     break
-                yield json.dumps({"stream": stream, "data": line})
+                yield json.dumps({"stream": stream, "data": line}) + "\n"
         finally:
             # Ensure task is cleaned up
             if not task.done():
