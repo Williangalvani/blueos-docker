@@ -68,7 +68,7 @@ class FirmwareUploader:
                     line = await process.stdout.readline()
                     if not line:
                         break
-                    decoded_line = line.decode().rstrip('\n')
+                    decoded_line = line.decode().rstrip("\n")
                     logger.debug(f"[stdout] {decoded_line}")
                     if output_callback:
                         await output_callback("stdout", decoded_line)
@@ -79,7 +79,7 @@ class FirmwareUploader:
                     line = await process.stderr.readline()
                     if not line:
                         break
-                    decoded_line = line.decode().rstrip('\n')
+                    decoded_line = line.decode().rstrip("\n")
                     logger.debug(f"[stderr] {decoded_line}")
                     errors.append(decoded_line)
                     if output_callback:
