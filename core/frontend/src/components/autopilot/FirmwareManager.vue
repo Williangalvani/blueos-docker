@@ -220,10 +220,10 @@
             <div
               v-for="(log, index) in install_logs"
               :key="index"
-              :class="{'error-log': log.stream === 'stderr', 'info-log': log.stream === 'stdout'}"
+              :class="{ 'error-log': log.stream === 'stderr', 'info-log': log.stream === 'stdout' }"
               class="log-line"
             >
-              {{ log.data }}<br>
+              {{ log.data.replace(/\r/g, '\n') }}<br>
             </div>
           </div>
         </v-card-text>
@@ -246,7 +246,6 @@
 </template>
 
 <script lang="ts">
-import { AxiosRequestConfig } from 'axios'
 import Vue from 'vue'
 
 import Notifier from '@/libs/notifier'
@@ -261,7 +260,7 @@ import {
   Vehicle,
 } from '@/types/autopilot'
 import { autopilot_service } from '@/types/frontend_services'
-import back_axios, { isBackendOffline } from '@/utils/api'
+import back_axios from '@/utils/api'
 
 const notifier = new Notifier(autopilot_service)
 
@@ -463,7 +462,7 @@ export default Vue.extend({
     async installFirmware(): Promise<void> {
       this.install_status = InstallStatus.Installing
       this.install_logs = []
-      
+
       let url = ''
       let requestOptions: RequestInit = {
         method: 'POST',
@@ -503,7 +502,7 @@ export default Vue.extend({
 
       try {
         const response = await fetch(url, requestOptions)
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
@@ -516,24 +515,33 @@ export default Vue.extend({
         }
 
         let buffer = ''
-        
+
         // eslint-disable-next-line no-constant-condition
         while (true) {
           const { done, value } = await reader.read()
-          
+
           if (done) break
-          
+
           buffer += decoder.decode(value, { stream: true })
           const lines = buffer.split('\n')
-          
+
           // Keep the last incomplete line in the buffer
           buffer = lines.pop() ?? ''
-          
+
           // Process complete lines
           for (const line of lines) {
             if (line.trim()) {
               try {
                 const log = JSON.parse(line)
+
+                // Check if backend sent "done" signal to close connection
+                if (log.stream === 'done') {
+                  // Close the progress dialog immediately
+                  this.install_status = InstallStatus.Succeeded
+                  this.install_result_message = 'Installation completed'
+                  return
+                }
+
                 this.install_logs.push(log)
               } catch (e) {
                 console.error('Failed to parse log line:', line, e)
@@ -542,10 +550,24 @@ export default Vue.extend({
           }
         }
 
-        this.install_status = InstallStatus.Succeeded
-        this.install_result_message = 'Successfully installed new firmware'
-        autopilot_data.reset()
-      } catch (error: any) {
+        // Check if there were any error messages in the logs
+        const hasErrors = this.install_logs.some((log) => log.stream === 'stderr')
+
+        if (hasErrors) {
+          this.install_status = InstallStatus.Failed
+          // Get the last error message
+          const lastError = this.install_logs
+            .filter((log) => log.stream === 'stderr')
+            .pop()
+          this.install_result_message = lastError?.data || 'Installation failed'
+          const message = `Could not install firmware: ${this.install_result_message}.`
+          notifier.pushError('FILE_FIRMWARE_INSTALL_FAIL', message)
+        } else {
+          this.install_status = InstallStatus.Succeeded
+          this.install_result_message = 'Successfully installed new firmware'
+          autopilot_data.reset()
+        }
+      } catch (error) {
         this.install_status = InstallStatus.Failed
         // Catch Chrome's net:::ERR_UPLOAD_FILE_CHANGED error
         if (error.message && error.message === 'Network Error') {
@@ -601,7 +623,7 @@ export default Vue.extend({
 }
 
 .install-logs {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.8);
   border-radius: 4px;
   max-height: 300px;
   overflow-y: auto;
