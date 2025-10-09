@@ -667,8 +667,11 @@ class AutoPilotManager(metaclass=Singleton):
         default_parameters: Optional[Parameters] = None,
         output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ) -> None:
-        await self.firmware_manager.install_firmware_from_file(firmware_path, board, default_parameters, output_callback)
+        await self.firmware_manager.install_firmware_from_file(
+            firmware_path, board, default_parameters, output_callback
+        )
 
+    # pylint: disable=too-many-arguments
     async def install_firmware_from_url(
         self,
         url: str,

@@ -4,7 +4,7 @@ import os
 import shutil
 from functools import wraps
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Callable, List, Optional, Tuple
 
 from commonwealth.mavlink_comm.exceptions import (
     FetchUpdatedMessageFail,
@@ -12,7 +12,6 @@ from commonwealth.mavlink_comm.exceptions import (
     MavlinkMessageSendFail,
 )
 from commonwealth.mavlink_comm.typedefs import FirmwareInfo, MavlinkVehicleType
-from commonwealth.utils.apis import StackedHTTPException
 from commonwealth.utils.decorators import single_threaded
 from fastapi import APIRouter, Body, File, HTTPException, UploadFile, status
 from fastapi.responses import PlainTextResponse, StreamingResponse
@@ -175,63 +174,73 @@ async def install_firmware_from_url(
     parameters: Optional[Parameters] = None,
     auto_switch_board: bool = True,
 ) -> Any:
-    async def stream_firmware_install() -> AsyncIterator[str]:
+    async def generate() -> AsyncGenerator[str, None]:
         board = None
+        # Create a queue to receive output from the callback
+        output_queue: asyncio.Queue[Tuple[str, str]] = asyncio.Queue()
+
+        async def output_callback(stream: str, line: str) -> None:
+            await output_queue.put((stream, line))
+
+        # Start the installation in a separate task
+        async def install_task() -> None:
+            nonlocal board
+            try:
+                await autopilot.kill_ardupilot()
+                await output_queue.put(("stdout", "Stopped autopilot"))
+
+                board = await target_board(board_name)
+                await autopilot.install_firmware_from_url(url, board, make_default, parameters, output_callback)
+            except Exception as e:
+                await output_queue.put(("stderr", f"Error: {str(e)}"))
+            finally:
+                await autopilot.start_ardupilot()
+                await output_queue.put(("stdout", "Started autopilot"))
+
+                # In some cases user might install a firmware that implies in a board change but this is not reflected,
+                # so if the board is different from the current one, we change it.
+                if (
+                    auto_switch_board
+                    and board
+                    and autopilot.current_board
+                    and autopilot.current_board.name != board.name
+                    and FlightControllerFlags.is_bootloader not in board.flags
+                ):
+                    await autopilot.change_board(board)
+                    await output_queue.put(("stdout", f"Switched to board {board.name}"))
+
+                # Signal completion
+                await output_queue.put(("done", ""))
+
+        # Start the installation task
+        task = asyncio.create_task(install_task())
+
+        # Stream output as it comes
         try:
-            # Create a queue to receive output from the callback
-            output_queue: asyncio.Queue[Tuple[str, str]] = asyncio.Queue()
-
-            async def output_callback(stream: str, line: str) -> None:
-                await output_queue.put((stream, line))
-
-            # Start the installation in a separate task
-            async def install_task() -> None:
-                nonlocal board
-                try:
-                    await autopilot.kill_ardupilot()
-                    yield_msg = json.dumps({"stream": "stdout", "data": "Stopped autopilot"}) + "\n"
-                    await output_queue.put(("stdout", "Stopped autopilot"))
-                    
-                    board = await target_board(board_name)
-                    await autopilot.install_firmware_from_url(url, board, make_default, parameters, output_callback)
-                except Exception as e:
-                    await output_queue.put(("stderr", f"Error: {str(e)}"))
-                finally:
-                    await autopilot.start_ardupilot()
-                    await output_queue.put(("stdout", "Started autopilot"))
-                    
-                    # In some cases user might install a firmware that implies in a board change but this is not reflected,
-                    # so if the board is different from the current one, we change it.
-                    if (
-                        auto_switch_board
-                        and board
-                        and autopilot.current_board
-                        and autopilot.current_board.name != board.name
-                        and FlightControllerFlags.is_bootloader not in board.flags
-                    ):
-                        await autopilot.change_board(board)
-                        await output_queue.put(("stdout", f"Switched to board {board.name}"))
-                    
-                    # Signal completion
-                    await output_queue.put(("done", ""))
-
-            # Start the installation task
-            task = asyncio.create_task(install_task())
-
-            # Stream output as it comes
             while True:
                 stream, line = await output_queue.get()
                 if stream == "done":
                     break
-                yield json.dumps({"stream": stream, "data": line}) + "\n"
+                yield json.dumps({"stream": stream, "data": line})
+        finally:
+            # Ensure task is cleaned up
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
-            # Wait for task to complete
-            await task
-
-        except Exception as e:
-            yield json.dumps({"stream": "stderr", "data": f"Fatal error: {str(e)}"}) + "\n"
-
-    return StreamingResponse(stream_firmware_install(), media_type="application/x-ndjson")
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+        headers={
+            "Content-Type": "application/x-ndjson",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable buffering for nginx
+        },
+    )
 
 
 @index_router_v1.post("/install_firmware_from_file", summary="Install firmware from user file.")
@@ -241,64 +250,75 @@ async def install_firmware_from_file(
     board_name: Optional[str] = None,
     parameters: Optional[Parameters] = None,
 ) -> Any:
-    async def stream_firmware_install() -> AsyncIterator[str]:
+    async def generate() -> AsyncGenerator[str, None]:
         custom_firmware = None
+        # Create a queue to receive output from the callback
+        output_queue: asyncio.Queue[Tuple[str, str]] = asyncio.Queue()
+
+        async def output_callback(stream: str, line: str) -> None:
+            await output_queue.put((stream, line))
+
+        # Start the installation in a separate task
+        async def install_task() -> None:
+            nonlocal custom_firmware
+            try:
+                custom_firmware = Path.joinpath(autopilot.settings.firmware_folder, "custom_firmware")
+                with open(custom_firmware, "wb") as buffer:
+                    shutil.copyfileobj(binary.file, buffer)
+                await output_queue.put(("stdout", "Firmware file uploaded"))
+
+                await autopilot.kill_ardupilot()
+                await output_queue.put(("stdout", "Stopped autopilot"))
+
+                await autopilot.install_firmware_from_file(
+                    custom_firmware, await target_board(board_name), parameters, output_callback
+                )
+
+                if custom_firmware and os.path.exists(custom_firmware):
+                    os.remove(custom_firmware)
+                    await output_queue.put(("stdout", "Cleaned up temporary firmware file"))
+
+            except InvalidFirmwareFile as error:
+                await output_queue.put(("stderr", f"Invalid firmware file: {str(error)}"))
+            except Exception as e:
+                await output_queue.put(("stderr", f"Error: {str(e)}"))
+            finally:
+                binary.file.close()
+                await autopilot.start_ardupilot()
+                await output_queue.put(("stdout", "Started autopilot"))
+
+                # Signal completion
+                await output_queue.put(("done", ""))
+
+        # Start the installation task
+        task = asyncio.create_task(install_task())
+
+        # Stream output as it comes
         try:
-            # Create a queue to receive output from the callback
-            output_queue: asyncio.Queue[Tuple[str, str]] = asyncio.Queue()
-
-            async def output_callback(stream: str, line: str) -> None:
-                await output_queue.put((stream, line))
-
-            # Start the installation in a separate task
-            async def install_task() -> None:
-                nonlocal custom_firmware
-                try:
-                    custom_firmware = Path.joinpath(autopilot.settings.firmware_folder, "custom_firmware")
-                    with open(custom_firmware, "wb") as buffer:
-                        shutil.copyfileobj(binary.file, buffer)
-                    await output_queue.put(("stdout", "Firmware file uploaded"))
-                    
-                    await autopilot.kill_ardupilot()
-                    await output_queue.put(("stdout", "Stopped autopilot"))
-                    
-                    await autopilot.install_firmware_from_file(
-                        custom_firmware, await target_board(board_name), parameters, output_callback
-                    )
-                    
-                    if custom_firmware and os.path.exists(custom_firmware):
-                        os.remove(custom_firmware)
-                        await output_queue.put(("stdout", "Cleaned up temporary firmware file"))
-                        
-                except InvalidFirmwareFile as error:
-                    await output_queue.put(("stderr", f"Invalid firmware file: {str(error)}"))
-                except Exception as e:
-                    await output_queue.put(("stderr", f"Error: {str(e)}"))
-                finally:
-                    binary.file.close()
-                    await autopilot.start_ardupilot()
-                    await output_queue.put(("stdout", "Started autopilot"))
-                    
-                    # Signal completion
-                    await output_queue.put(("done", ""))
-
-            # Start the installation task
-            task = asyncio.create_task(install_task())
-
-            # Stream output as it comes
             while True:
                 stream, line = await output_queue.get()
                 if stream == "done":
                     break
-                yield json.dumps({"stream": stream, "data": line}) + "\n"
+                yield json.dumps({"stream": stream, "data": line})
+        finally:
+            # Ensure task is cleaned up
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
-            # Wait for task to complete
-            await task
-
-        except Exception as e:
-            yield json.dumps({"stream": "stderr", "data": f"Fatal error: {str(e)}"}) + "\n"
-
-    return StreamingResponse(stream_firmware_install(), media_type="application/x-ndjson")
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+        headers={
+            "Content-Type": "application/x-ndjson",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable buffering for nginx
+        },
+    )
 
 
 @index_router_v1.get(
@@ -372,50 +392,61 @@ async def stop() -> Any:
 @index_router_v1.post("/restore_default_firmware", summary="Restore default firmware.")
 @single_threaded(callback=raise_lock)
 async def restore_default_firmware(board_name: Optional[str] = None) -> Any:
-    async def stream_firmware_restore() -> AsyncIterator[str]:
+    async def generate() -> AsyncGenerator[str, None]:
+        # Create a queue to receive output from the callback
+        output_queue: asyncio.Queue[Tuple[str, str]] = asyncio.Queue()
+
+        async def output_callback(stream: str, line: str) -> None:
+            await output_queue.put((stream, line))
+
+        # Start the restoration in a separate task
+        async def restore_task() -> None:
+            try:
+                await autopilot.kill_ardupilot()
+                await output_queue.put(("stdout", "Stopped autopilot"))
+
+                await autopilot.restore_default_firmware(await target_board(board_name), output_callback)
+
+            except (NoDefaultFirmwareAvailable, ValueError) as error:
+                await output_queue.put(("stderr", f"Error: {str(error)}"))
+            except Exception as e:
+                await output_queue.put(("stderr", f"Error: {str(e)}"))
+            finally:
+                await autopilot.start_ardupilot()
+                await output_queue.put(("stdout", "Started autopilot"))
+
+                # Signal completion
+                await output_queue.put(("done", ""))
+
+        # Start the restoration task
+        task = asyncio.create_task(restore_task())
+
+        # Stream output as it comes
         try:
-            # Create a queue to receive output from the callback
-            output_queue: asyncio.Queue[Tuple[str, str]] = asyncio.Queue()
-
-            async def output_callback(stream: str, line: str) -> None:
-                await output_queue.put((stream, line))
-
-            # Start the restoration in a separate task
-            async def restore_task() -> None:
-                try:
-                    await autopilot.kill_ardupilot()
-                    await output_queue.put(("stdout", "Stopped autopilot"))
-                    
-                    await autopilot.restore_default_firmware(await target_board(board_name), output_callback)
-                    
-                except (NoDefaultFirmwareAvailable, ValueError) as error:
-                    await output_queue.put(("stderr", f"Error: {str(error)}"))
-                except Exception as e:
-                    await output_queue.put(("stderr", f"Error: {str(e)}"))
-                finally:
-                    await autopilot.start_ardupilot()
-                    await output_queue.put(("stdout", "Started autopilot"))
-                    
-                    # Signal completion
-                    await output_queue.put(("done", ""))
-
-            # Start the restoration task
-            task = asyncio.create_task(restore_task())
-
-            # Stream output as it comes
             while True:
                 stream, line = await output_queue.get()
                 if stream == "done":
                     break
-                yield json.dumps({"stream": stream, "data": line}) + "\n"
+                yield json.dumps({"stream": stream, "data": line})
+        finally:
+            # Ensure task is cleaned up
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
-            # Wait for task to complete
-            await task
-
-        except Exception as e:
-            yield json.dumps({"stream": "stderr", "data": f"Fatal error: {str(e)}"}) + "\n"
-
-    return StreamingResponse(stream_firmware_restore(), media_type="application/x-ndjson")
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+        headers={
+            "Content-Type": "application/x-ndjson",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @index_router_v1.get(

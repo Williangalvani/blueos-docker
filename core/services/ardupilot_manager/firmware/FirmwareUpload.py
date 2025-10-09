@@ -2,7 +2,7 @@ import asyncio
 import pathlib
 import shutil
 import subprocess
-from typing import AsyncIterator, Awaitable, Callable, Optional
+from typing import Awaitable, Callable, Optional
 
 from loguru import logger
 

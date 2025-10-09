@@ -140,12 +140,7 @@ async def delete_everything_stream(path: Path) -> AsyncGenerator[dict[str, Any],
                 ).to_dict()
                 # fmt: on
             # File is open, skip it
-            return DeletionInfo(
-                path=str(item),
-                size=0,
-                type="file",
-                success=False
-            ).to_dict()
+            return DeletionInfo(path=str(item), size=0, type="file", success=False).to_dict()
         except Exception as exception:
             logger.warning(f"Failed to delete: {item}, {exception}")
             # fmt: off

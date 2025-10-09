@@ -139,6 +139,7 @@ class FirmwareManager:
             if self.default_user_params_path(platform).is_file():
                 self.default_user_params_path(platform).unlink()
 
+    # pylint: disable=too-many-arguments
     async def install_firmware_from_url(
         self,
         url: str,
