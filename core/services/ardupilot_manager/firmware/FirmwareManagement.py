@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Awaitable, Callable, List, Optional
 
 from loguru import logger
 
@@ -87,7 +87,11 @@ class FirmwareManager:
         return firmware
 
     async def install_firmware_from_file(
-        self, new_firmware_path: pathlib.Path, board: FlightController, default_parameters: Optional[Parameters] = None
+        self,
+        new_firmware_path: pathlib.Path,
+        board: FlightController,
+        default_parameters: Optional[Parameters] = None,
+        output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ) -> None:
         if default_parameters is not None:
             if board.platform.platform_type == PlatformType.Serial:
@@ -96,10 +100,10 @@ class FirmwareManager:
                 self.save_params_to_default_linux_path(board.platform, default_parameters)
         try:
             if board.type == PlatformType.Serial:
-                await self.firmware_installer.install_firmware(new_firmware_path, board)
+                await self.firmware_installer.install_firmware(new_firmware_path, board, None, output_callback)
             else:
                 await self.firmware_installer.install_firmware(
-                    new_firmware_path, board, self.firmware_path(board.platform)
+                    new_firmware_path, board, self.firmware_path(board.platform), output_callback
                 )
             logger.info(f"Succefully installed firmware for {board.name}.")
         except Exception as error:
@@ -141,8 +145,13 @@ class FirmwareManager:
         board: FlightController,
         makeDefault: bool = False,
         default_parameters: Optional[Parameters] = None,
+        output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ) -> None:
+        if output_callback:
+            await output_callback("stdout", f"Downloading firmware from {url}...")
         temporary_file = self.firmware_download._download(url.strip())
+        if output_callback:
+            await output_callback("stdout", "Firmware downloaded successfully")
         if default_parameters is not None:
             if board.platform.platform_type == PlatformType.Serial:
                 self.embed_params_into_apj(temporary_file, default_parameters)
@@ -150,17 +159,19 @@ class FirmwareManager:
                 self.save_params_to_default_linux_path(board.platform, default_parameters)
         if makeDefault:
             shutil.copy(temporary_file, self.default_user_firmware_path(board.platform))
-        await self.install_firmware_from_file(temporary_file, board, default_parameters)
+        await self.install_firmware_from_file(temporary_file, board, default_parameters, output_callback)
 
     async def install_firmware_from_params(self, vehicle: Vehicle, board: FlightController, version: str = "") -> None:
         url = self.firmware_download.get_download_url(vehicle, board, version)
         await self.install_firmware_from_url(url, board)
 
-    async def restore_default_firmware(self, board: FlightController) -> None:
+    async def restore_default_firmware(
+        self, board: FlightController, output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None
+    ) -> None:
         if not self.is_default_firmware_available(board.platform):
             raise NoDefaultFirmwareAvailable(f"Default firmware not available for '{board.name}'.")
 
-        await self.install_firmware_from_file(self.default_firmware_path(board.platform), board)
+        await self.install_firmware_from_file(self.default_firmware_path(board.platform), board, None, output_callback)
 
     @staticmethod
     def validate_firmware(firmware_path: pathlib.Path, board: FlightController) -> None:

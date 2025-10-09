@@ -4,7 +4,7 @@ import pathlib
 import subprocess
 import time
 from copy import deepcopy
-from typing import Any, List, Optional, Set
+from typing import Any, Awaitable, Callable, List, Optional, Set
 
 import psutil
 from commonwealth.mavlink_comm.VehicleManager import VehicleManager
@@ -661,9 +661,13 @@ class AutoPilotManager(metaclass=Singleton):
         return self.firmware_manager.get_available_firmwares(vehicle, board, firmware_name)
 
     async def install_firmware_from_file(
-        self, firmware_path: pathlib.Path, board: FlightController, default_parameters: Optional[Parameters] = None
+        self,
+        firmware_path: pathlib.Path,
+        board: FlightController,
+        default_parameters: Optional[Parameters] = None,
+        output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ) -> None:
-        await self.firmware_manager.install_firmware_from_file(firmware_path, board, default_parameters)
+        await self.firmware_manager.install_firmware_from_file(firmware_path, board, default_parameters, output_callback)
 
     async def install_firmware_from_url(
         self,
@@ -671,11 +675,16 @@ class AutoPilotManager(metaclass=Singleton):
         board: FlightController,
         make_default: bool = False,
         default_parameters: Optional[Parameters] = None,
+        output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ) -> None:
-        await self.firmware_manager.install_firmware_from_url(url, board, make_default, default_parameters)
+        await self.firmware_manager.install_firmware_from_url(
+            url, board, make_default, default_parameters, output_callback
+        )
 
-    async def restore_default_firmware(self, board: FlightController) -> None:
-        await self.firmware_manager.restore_default_firmware(board)
+    async def restore_default_firmware(
+        self, board: FlightController, output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None
+    ) -> None:
+        await self.firmware_manager.restore_default_firmware(board, output_callback)
 
     async def set_manual_board_master_endpoint(self, endpoint: Endpoint) -> bool:
         self.configuration["manual_board_master_endpoint"] = endpoint.as_dict()

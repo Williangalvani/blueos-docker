@@ -2,6 +2,7 @@ import asyncio
 import pathlib
 import shutil
 import subprocess
+from typing import AsyncIterator, Awaitable, Callable, Optional
 
 from loguru import logger
 
@@ -43,7 +44,11 @@ class FirmwareUploader:
     def set_baudrate_flightstack(self, baudrate: int) -> None:
         self._baudrate_flightstack = baudrate
 
-    async def upload(self, firmware_path: pathlib.Path) -> None:
+    async def upload(
+        self,
+        firmware_path: pathlib.Path,
+        output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None,
+    ) -> None:
         logger.info("Starting upload of firmware to board.")
 
         process = await asyncio.create_subprocess_shell(
@@ -63,7 +68,10 @@ class FirmwareUploader:
                     line = await process.stdout.readline()
                     if not line:
                         break
-                    logger.debug(f"[stdout] {line.decode().strip()}")
+                    decoded_line = line.decode().strip()
+                    logger.debug(f"[stdout] {decoded_line}")
+                    if output_callback:
+                        await output_callback("stdout", decoded_line)
 
         async def read_stderr() -> None:
             if process.stderr:
@@ -71,8 +79,11 @@ class FirmwareUploader:
                     line = await process.stderr.readline()
                     if not line:
                         break
-                    logger.debug(f"[stderr] {line.decode().strip()}")
-                    errors.append(line.decode().strip())
+                    decoded_line = line.decode().strip()
+                    logger.debug(f"[stderr] {decoded_line}")
+                    errors.append(decoded_line)
+                    if output_callback:
+                        await output_callback("stderr", decoded_line)
 
         try:
             # Run both stream readers and process wait concurrently with a single timeout

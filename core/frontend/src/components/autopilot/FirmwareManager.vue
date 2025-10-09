@@ -198,19 +198,34 @@
       v-model="show_install_progress"
       hide-overlay
       persistent
-      width="300"
+      width="600"
     >
       <v-card
         color="primary"
         dark
       >
+        <v-card-title>
+          Installing firmware
+        </v-card-title>
         <v-card-text>
-          Installing firmware. Please wait.
           <v-progress-linear
             indeterminate
             color="white"
-            class="mb-0"
+            class="mb-4"
           />
+          <div
+            v-if="install_logs.length > 0"
+            class="install-logs pa-2"
+          >
+            <div
+              v-for="(log, index) in install_logs"
+              :key="index"
+              :class="{'error-log': log.stream === 'stderr', 'info-log': log.stream === 'stdout'}"
+              class="log-line"
+            >
+              {{ log.data }}
+            </div>
+          </div>
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -289,6 +304,7 @@ export default Vue.extend({
       firmware_file: null as (Blob | null),
       install_result_message: '',
       chosen_platform: null as (string | null),
+      install_logs: [] as Array<{stream: string, data: string}>,
       rebootOnBoardComputer,
       requestOnBoardComputerReboot,
     }
@@ -446,21 +462,26 @@ export default Vue.extend({
     },
     async installFirmware(): Promise<void> {
       this.install_status = InstallStatus.Installing
-      const axios_request_config: AxiosRequestConfig = {
-        method: 'post',
+      this.install_logs = []
+      
+      let url = ''
+      let requestOptions: RequestInit = {
+        method: 'POST',
       }
+
       if (this.upload_type === UploadType.Cloud) {
         // Populate request with data for cloud install
-        Object.assign(axios_request_config, {
-          url: `${autopilot.API_URL}/install_firmware_from_url`,
-          params: { url: this.chosen_firmware_url, board_name: this.chosen_board?.platform.name },
+        const params = new URLSearchParams({
+          url: this.chosen_firmware_url?.toString() ?? '',
+          board_name: this.chosen_board?.platform.name ?? '',
         })
+        url = `${autopilot.API_URL}/install_firmware_from_url?${params}`
       } else if (this.upload_type === UploadType.Restore) {
         // Populate request with data for restore install
-        Object.assign(axios_request_config, {
-          url: `${autopilot.API_URL}/restore_default_firmware`,
-          params: { board_name: this.chosen_board?.platform.name },
+        const params = new URLSearchParams({
+          board_name: this.chosen_board?.platform.name ?? '',
         })
+        url = `${autopilot.API_URL}/restore_default_firmware?${params}`
       } else {
         // Populate request with data for file install
         if (!this.firmware_file) {
@@ -470,32 +491,71 @@ export default Vue.extend({
         }
         const form_data = new FormData()
         form_data.append('binary', this.firmware_file)
-        Object.assign(axios_request_config, {
-          url: `${autopilot.API_URL}/install_firmware_from_file`,
-          headers: { 'Content-Type': 'multipart/form-data' },
-          params: { board_name: this.chosen_board?.platform.name },
-          data: form_data,
+        const params = new URLSearchParams({
+          board_name: this.chosen_board?.platform.name ?? '',
         })
+        url = `${autopilot.API_URL}/install_firmware_from_file?${params}`
+        requestOptions = {
+          method: 'POST',
+          body: form_data,
+        }
       }
 
-      await back_axios(axios_request_config)
-        .then(() => {
-          this.install_status = InstallStatus.Succeeded
-          this.install_result_message = 'Successfully installed new firmware'
-          autopilot_data.reset()
-        })
-        .catch((error) => {
-          this.install_status = InstallStatus.Failed
-          if (isBackendOffline(error)) { return }
-          // Catch Chrome's net:::ERR_UPLOAD_FILE_CHANGED error
-          if (error.message && error.message === 'Network Error') {
-            this.install_result_message = 'Upload fail. If the file was changed, clean the form and re-select it.'
-          } else {
-            this.install_result_message = error.response?.data?.detail ?? error.message
+      try {
+        const response = await fetch(url, requestOptions)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error('No response body')
+        }
+
+        let buffer = ''
+        
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read()
+          
+          if (done) break
+          
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          
+          // Keep the last incomplete line in the buffer
+          buffer = lines.pop() ?? ''
+          
+          // Process complete lines
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                const log = JSON.parse(line)
+                this.install_logs.push(log)
+              } catch (e) {
+                console.error('Failed to parse log line:', line, e)
+              }
+            }
           }
-          const message = `Could not install firmware: ${this.install_result_message}.`
-          notifier.pushError('FILE_FIRMWARE_INSTALL_FAIL', message)
-        })
+        }
+
+        this.install_status = InstallStatus.Succeeded
+        this.install_result_message = 'Successfully installed new firmware'
+        autopilot_data.reset()
+      } catch (error: any) {
+        this.install_status = InstallStatus.Failed
+        // Catch Chrome's net:::ERR_UPLOAD_FILE_CHANGED error
+        if (error.message && error.message === 'Network Error') {
+          this.install_result_message = 'Upload fail. If the file was changed, clean the form and re-select it.'
+        } else {
+          this.install_result_message = error.response?.data?.detail ?? error.message
+        }
+        const message = `Could not install firmware: ${this.install_result_message}.`
+        notifier.pushError('FILE_FIRMWARE_INSTALL_FAIL', message)
+      }
     },
   },
 })
@@ -538,5 +598,29 @@ export default Vue.extend({
     flex-direction: column;
     align-items: flex-end;
   }
+}
+
+.install-logs {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.log-line {
+  padding: 2px 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.info-log {
+  color: #ffffff;
+}
+
+.error-log {
+  color: #ff5252;
+  font-weight: bold;
 }
 </style>

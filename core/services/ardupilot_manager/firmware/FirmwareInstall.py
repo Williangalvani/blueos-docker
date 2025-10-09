@@ -4,7 +4,7 @@ import pathlib
 import platform as system_platform
 import shutil
 import stat
-from typing import Optional, Union
+from typing import Awaitable, Callable, Optional, Union
 
 from ardupilot_fw_decoder import BoardSubType, BoardType, Decoder
 from elftools.elf.elffile import ELFFile
@@ -131,6 +131,7 @@ class FirmwareInstaller:
         new_firmware_path: pathlib.Path,
         board: FlightController,
         firmware_dest_path: Optional[pathlib.Path] = None,
+        output_callback: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ) -> None:
         """Install given firmware."""
         if not new_firmware_path.is_file():
@@ -148,13 +149,15 @@ class FirmwareInstaller:
             if not board.path:
                 raise ValueError("Board path not available.")
             firmware_uploader.set_autopilot_port(pathlib.Path(board.path))
-            await firmware_uploader.upload(new_firmware_path)
+            await firmware_uploader.upload(new_firmware_path, output_callback)
             return
         if firmware_format == FirmwareFormat.ELF:
             # Using copy() instead of move() since the last can't handle cross-device properly (e.g. docker binds)
             if not firmware_dest_path:
                 raise FirmwareInstallFail("Firmware file destination not provided.")
             shutil.copy(new_firmware_path, firmware_dest_path)
+            if output_callback:
+                await output_callback("stdout", f"Firmware copied to {firmware_dest_path}")
             return
 
         raise UnsupportedPlatform("Firmware install is not implemented for this platform.")
